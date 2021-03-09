@@ -30,10 +30,15 @@
 #include "resource.h"
 #include "Particles.h"
 
-#define WIDTH 640
-#define HEIGHT 480
+#define WIDTH 2560
+#define HEIGHT 1440
 #define BITSPERPIXEL 32
 #define FULLSCREEN
+#define ORIGINAL_WIDTH 640
+#define ORIGINAL_HEIGHT 480
+
+#define LOGO_WIDTH (WIDTH*256/1280)
+#define LOGO_HEIGHT (WIDTH*63/1280)
 
 const double piover180 = 0.0174532925199432957692369076848861;
 
@@ -139,16 +144,33 @@ HWND		hWND;
 HDC			hDC;
 HGLRC		hRC;
 
-static void panViewOrtho() {
+static void panViewOrthoModified() {
 	glViewport(0,0,WIDTH,HEIGHT);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0, WIDTH, HEIGHT, 0, -1, 1);
+    int w = ORIGINAL_HEIGHT * WIDTH / HEIGHT;
+    if (w >= ORIGINAL_WIDTH) {
+        int margin = (w - ORIGINAL_WIDTH) / 2;
+        glOrtho(-margin, ORIGINAL_WIDTH + margin, ORIGINAL_HEIGHT, 0, -1, 1);
+    } else {
+        int h = ORIGINAL_WIDTH * HEIGHT / WIDTH;
+        int margin = (h - ORIGINAL_HEIGHT) / 2;
+        glOrtho(0, WIDTH, ORIGINAL_HEIGHT + margin, -margin, -1, 1);
+    }
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 }
 
-void panViewPerspectiveFOV(float fov) 
+static void panViewOrtho() {
+    glViewport(0, 0, WIDTH, HEIGHT);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0, WIDTH, HEIGHT, 0, -1, 1);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+}
+
+void panViewPerspectiveFOV(float fov)
 {
 	glViewport(0,0,WIDTH,HEIGHT);
 	glMatrixMode(GL_PROJECTION);
@@ -295,7 +317,7 @@ struct ZSpringField : Field {
 static void algheTraICapelli(float t) {
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  panViewOrtho();
+  panViewOrthoModified();
   const int cosi = 120;
   const int steps = 20;
   int i, j;
@@ -928,14 +950,14 @@ static void skDraw() {
     glColor4f(0, 0, 0, vnoise(t*20)*2+1.5);
     greetscreds->use();
     glBegin(GL_QUADS);
-    glTexCoord2f(0, 0.75);
-    glVertex2f(640-256, 480-64);
+    glTexCoord2f(0, 0.75+ 1 / 256.0);
+    glVertex2f(WIDTH-LOGO_WIDTH, HEIGHT-LOGO_HEIGHT);
     glTexCoord2f(0, 1.0);
-    glVertex2f(640-256, 480);
+    glVertex2f(WIDTH-LOGO_WIDTH, HEIGHT);
     glTexCoord2f(1.0, 1.0);
-    glVertex2f(640, 480);
-    glTexCoord2f(1.0, 0.75);
-    glVertex2f(640, 480-64);
+    glVertex2f(WIDTH, HEIGHT);
+    glTexCoord2f(1.0, 0.75 + 1 / 256.0);
+    glVertex2f(WIDTH, HEIGHT-LOGO_HEIGHT);
     glEnd();
     glDisable(GL_TEXTURE_2D);
   }

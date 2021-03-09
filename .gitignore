@@ -31,3 +31,6 @@
 *.out
 *.app
 /.vs/coolprint/v16
+/Debug
+/Release
+*.user
