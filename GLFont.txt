@@ -1,0 +1,36 @@
+
+GLFONT - By Pan aka Marco *PaN!* Foco of SpinningKids
+
+Class methods/constructors
+
+  GLFont(HDC hDC, const char *s);
+
+	builds the object, given a hdc and a font name as a char *
+
+  void printf(const char *fmt, ...) const;
+
+	just like printf, writes the text at current coords, with size 1. After this call, the current position is moved after the last character.
+
+  void printfx(float x, float y, float gs, float gr, float lsx, float lsy, float lr, float tracking, const char *fmt, ...) const;
+
+	The current location after the call is after the last char. Like the previous one, but writes the text at coords (x, y) with a global scale gs, a global rotation, or orientation (gr), a local scale (lsx, lsy), a local rotation (lr), a tracking (tracking). With the word"global" I mean something applied to ALL the text block (the area containing the text), on the other hand the "local" stuff is applied char by char.
+
+  void printChar(char c, float lsx, float lsy, float lr, float tracking) const;
+
+	Prints a single char at current position, with a local scale, rotation and scaling. After this call, the current position is moved after the char.
+
+  float getWidth(char c, float tracking = 0) const { return gmf[c-32].gmfCellIncX*(tracking+1); }
+
+	Returns a char's widht.
+
+  float getHeight(char c) const { return gmf[c-32].gmfBlackBoxY; }
+
+	Returns a char's height.
+
+  void skipChar(char c, float tracking = 0) const { glTranslatef(getWidth(c, tracking), 0, 0); }
+
+	Moves the current position, as when you print a whitespace.
+
+  GLFont::~GLFont();
+
+	Destroys the object.
