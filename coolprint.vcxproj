@@ -141,9 +141,6 @@
     <ClCompile Include="Particles.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="originalcode.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="GenTex.h" />
     <ClInclude Include="GLFont.h" />
     <ClInclude Include="GLTexture.h" />
