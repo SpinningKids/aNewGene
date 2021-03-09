@@ -15,9 +15,9 @@
 #define WINDOW_CLASS_NAME "SKCLASS"
 #define WINDOW_TITLE "CoolPrint sample"
 
-#include <windows.h>
+#include <Windows.h>
 #include <mmsystem.h>
-#include <gl\glaux.h>
+#include <GL/GLU.h>
 #include <math.h>
 
 #ifdef USETEXT
@@ -190,7 +190,8 @@ GLTexture *loadTexture(int resid, int logsize) {
   GetDIBits(displaydc, h, 0, txsize, texture, (BITMAPINFO *)&a, DIB_RGB_COLORS);
   GLfloat *tex = ret->getImage();
   const float un255 = 1.0f/255.0f;
-  for(int i = 0; i < txsize*192; i++) {
+  int i;
+  for(i = 0; i < txsize*192; i++) {
     tex[i*4] = tex[i*4+1] = tex[i*4+2] = texture[i*4]*un255;
     tex[i*4+3] = 1.0f;
   }
@@ -784,7 +785,7 @@ void scenaElefanti(float t, int view, int view2) {
 
   static float ot = t;
   if (!view2) {
-    static once = true;
+    static bool once = true;
     if (once) {
       for(i = 0; i < fiori1->num; i++) {
         fiori1->parts[i].r = fiori1->parts[i].r*0.5+0.5;
