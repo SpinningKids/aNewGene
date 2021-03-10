@@ -5,40 +5,25 @@
   Comments: creation
  ************************************/
 
-#ifndef _GLTEXTURE_H_
-#define _GLTEXTURE_H_
-
-#ifdef _MSC_VER
-#pragma once
-#pragma pack(push, _PACK_GLTEXTURE_H_)
-#endif //_MSC_VER
-
-#include <windows.h>
-#include <gl/gl.h>
+#ifndef GLTEXTURE_H_
+#define GLTEXTURE_H_
 
 class GLTexture {
-  GLfloat *mem;
-  int bpp, logsize, size;
-  GLuint txt;
-  bool init;
+    float* mem_;
+    int size_;
+    unsigned int txt_;
+    bool init_;
 public:
-  explicit GLTexture(int _logsize);
+    explicit GLTexture(int logsize);
 
-  ~GLTexture() {
-    delete[] mem;
-    glDeleteTextures(1,&txt);
-  }
+    ~GLTexture();
 
-  GLfloat *getImage() { return mem; }
-  int getSize() { return size; }
+    float* getImage() const { return mem_; }
+    int getSize() const { return size_; }
 
-  void update();
-  void use();
-  int getID(){ return txt; }
+    void update();
+    void use();
+    int getID() const { return txt_; }
 };
 
-#ifdef _MSC_VER
-#pragma pack(pop, _PACK_GLTEXTURE_H_)
-#endif //_MSC_VER
-
-#endif //_GLTEXTURE_H_
+#endif // GLTEXTURE_H_

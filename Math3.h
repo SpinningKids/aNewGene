@@ -1,16 +1,11 @@
 
-#ifndef __MATH3_H__
-#define __MATH3_H__
+#ifndef MATH3_H_
+#define MATH3_H_
 
 #include <math.h>
 
 struct Vector3;
 struct Matrix3;
-
-#define Colour Vector3
-#define red xversor
-#define green yversor
-#define blue zversor
 
 extern "C" const Vector3 zero3;
 extern "C" const Vector3 xversor;
@@ -97,7 +92,7 @@ struct Matrix3 {
   }
 
   Matrix3 &operator *= (Matrix3 const &m) {
-    register float t1, t2;
+    float t1, t2;
 
     a = (t1 = a) * m.a + b * m.d + c * m.g;
     b = t1 * m.b + (t2 = b) * m.e + c * m.h;
@@ -149,7 +144,7 @@ struct Vector3 {
   Vector3(float ax, float ay, float az) : x(ax), y(ay), z(az) {}
 
   void normalize() {
-    register float d = invsqrt(x*x+y*y+z*z);
+    float d = invsqrt(x*x+y*y+z*z);
     x *= d;
     y *= d;
     z *= d;
@@ -177,8 +172,8 @@ struct Vector3 {
   }
 
   Vector3 &operator ^= (Vector3 const &v) {
-    register float cy;
-    register float cx = x;
+    float cy;
+    float cx = x;
     x = (cy = y) * v.z - v.y * z;
     y = v.x * z - cx * v.z;
     z = cx * v.y - v.x * cy;
@@ -193,7 +188,7 @@ struct Vector3 {
   }
 
   Vector3 &operator *= (Matrix3 const &m) {
-    register float cx, cy;
+    float cx, cy;
     x *= m.a*(cx = x) + m.d*y + m.g*z;
     y *= m.b*cx + m.e*(cy = y) + m.h*z;
     z *= m.c*cx + m.f*cy + m.i*z;
@@ -272,7 +267,7 @@ inline float abs(Vector3 const &v) {
 }
 
 inline Vector3 normalized(Vector3 const &v) {
-  register float d = invsqrt(v.x*v.x+v.y*v.y+v.z*v.z);
+  float d = invsqrt(v.x*v.x+v.y*v.y+v.z*v.z);
   return Vector3(v.x*d, v.y*d,v.z*d);
 }
 
@@ -353,4 +348,4 @@ inline bool operator != (Matrix3 const &m1, Matrix3 const &m2) {
     m1.g != m2.g || m1.h != m2.h || m1.i != m2.i);
 }
 
-#endif
+#endif // MATH3_H_

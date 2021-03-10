@@ -7,32 +7,37 @@
 
 #include "GLTexture.h"
 #include <memory.h>
+#include <Windows.h>
+#include <gl/GL.h>
 
-GLTexture::GLTexture(int _logsize) : logsize(_logsize), size(1<<_logsize), mem(new GLfloat[4*(1<<_logsize)*(1<<_logsize)]) {
-  glGenTextures(1, &txt);
-//  memset(mem, 0, size*size*4*sizeof(float));
-//  glBindTexture(GL_TEXTURE_2D, txt);
-  init = false;
+GLTexture::GLTexture(int logsize) : mem_(new GLfloat[4 * (1 << logsize) * (1 << logsize)]), size_(1 << logsize), init_(false) {
+    glGenTextures(1, &txt_);
+}
+
+GLTexture::~GLTexture() {
+    delete[] mem_;
+    glDeleteTextures(1, &txt_);
 }
 
 void GLTexture::update() {
-  glBindTexture(GL_TEXTURE_2D, txt);
-  if (!init) {
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size, size, 0, GL_RGBA, GL_FLOAT, mem);
-  	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    init = true;
-  } else
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, size, size, GL_RGBA, GL_FLOAT, mem);
+    glBindTexture(GL_TEXTURE_2D, txt_);
+    if (!init_) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size_, size_, 0, GL_RGBA, GL_FLOAT, mem_);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        init_ = true;
+    } else {
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, size_, size_, GL_RGBA, GL_FLOAT, mem_);
+    }
 }
 
 void GLTexture::use() {
-  if (!init)
-    glDisable(GL_TEXTURE_2D);
-  else {
-    glBindTexture(GL_TEXTURE_2D, txt);
-    glEnable(GL_TEXTURE_2D);
-  }
+    if (!init_) {
+        glDisable(GL_TEXTURE_2D);
+    } else {
+        glBindTexture(GL_TEXTURE_2D, txt_);
+        glEnable(GL_TEXTURE_2D);
+    }
 }

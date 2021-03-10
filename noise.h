@@ -5,12 +5,11 @@
   Comments: creation
  ************************************/
 
-#ifndef _NOISE_H_
-#define _NOISE_H_
+#ifndef NOISE_H_
+#define NOISE_H_
 
 extern float vnoise(int num, float x[]);
 extern float vlattice(int num, int x[]);
-extern float soundgennoise(float t, int shape);
 extern float vnoise(float x);
 extern float vlattice(int x);
 
@@ -45,4 +44,4 @@ inline float vlattice(int x, int y, int z, int w) {
 }
 
 
-#endif //_NOISE_H_
+#endif // NOISE_H_
