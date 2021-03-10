@@ -69,7 +69,7 @@ GLint mylandscape2;
 
 // Music Related
 
-bool music;
+bool music = false;
 FMUSIC_MODULE *fmodule;
 
 typedef struct {
@@ -1170,9 +1170,6 @@ int WINAPI WinMain(HINSTANCE hinstance,HINSTANCE hprevinstance,LPSTR lpcmdline,i
         ShowWindow(hWND, SW_HIDE);
         skInitDemoStuff();
         FSOUND_File_SetCallbacks(memopen, memclose, memread, memseek, memtell);
-        if (music = (FSOUND_Init(44100, 0) && (fmodule = FMUSIC_LoadSong(MAKEINTRESOURCE(IDR_RC_RTDATA1), nullptr)))) {
-            FMUSIC_PlaySong(fmodule);
-        }
         bool once = true;
         panInitTimer();
         while (true) {
@@ -1191,6 +1188,9 @@ int WINAPI WinMain(HINSTANCE hinstance,HINSTANCE hprevinstance,LPSTR lpcmdline,i
                     skSwapBuffers();
                     ShowWindow(hWND, SW_SHOW);
                     if (panGetTime() > 0.5) {
+                        if (music = (FSOUND_Init(44100, 0) && (fmodule = FMUSIC_LoadSong(MAKEINTRESOURCE(IDR_RC_RTDATA1), nullptr)))) {
+                            FMUSIC_PlaySong(fmodule);
+                        }
                         panInitTimer();
                         once = false;
                     }

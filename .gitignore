@@ -30,7 +30,7 @@
 *.exe
 *.out
 *.app
-/.vs/coolprint/v16
+/.vs
 /Debug
 /Release
 *.user

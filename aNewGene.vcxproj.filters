@@ -1,0 +1,94 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="GenTex.cpp" />
+    <ClCompile Include="GLFont.cpp" />
+    <ClCompile Include="GLTexture.cpp" />
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="MATH3.CPP" />
+    <ClCompile Include="noise.cpp" />
+    <ClCompile Include="Particles.cpp" />
+    <ClCompile Include="minifmod\Fmusic.c">
+      <Filter>minifmod</Filter>
+    </ClCompile>
+    <ClCompile Include="minifmod\Fsound.c">
+      <Filter>minifmod</Filter>
+    </ClCompile>
+    <ClCompile Include="minifmod\mixer_clipcopy.c">
+      <Filter>minifmod</Filter>
+    </ClCompile>
+    <ClCompile Include="minifmod\mixer_fpu_ramp.c">
+      <Filter>minifmod</Filter>
+    </ClCompile>
+    <ClCompile Include="minifmod\music_formatxm.c">
+      <Filter>minifmod</Filter>
+    </ClCompile>
+    <ClCompile Include="minifmod\system_file.c">
+      <Filter>minifmod</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="GenTex.h" />
+    <ClInclude Include="GLFont.h" />
+    <ClInclude Include="GLTexture.h" />
+    <ClInclude Include="Math3.h" />
+    <ClInclude Include="noise.h" />
+    <ClInclude Include="Particles.h" />
+    <ClInclude Include="minifmod\minifmod.h">
+      <Filter>minifmod</Filter>
+    </ClInclude>
+    <ClInclude Include="minifmod\Mixer.h">
+      <Filter>minifmod</Filter>
+    </ClInclude>
+    <ClInclude Include="minifmod\mixer_clipcopy.h">
+      <Filter>minifmod</Filter>
+    </ClInclude>
+    <ClInclude Include="minifmod\mixer_fpu_ramp.h">
+      <Filter>minifmod</Filter>
+    </ClInclude>
+    <ClInclude Include="minifmod\Music.h">
+      <Filter>minifmod</Filter>
+    </ClInclude>
+    <ClInclude Include="minifmod\music_formatxm.h">
+      <Filter>minifmod</Filter>
+    </ClInclude>
+    <ClInclude Include="minifmod\Sound.h">
+      <Filter>minifmod</Filter>
+    </ClInclude>
+    <ClInclude Include="minifmod\system_file.h">
+      <Filter>minifmod</Filter>
+    </ClInclude>
+    <ClInclude Include="minifmod\system_memory.h">
+      <Filter>minifmod</Filter>
+    </ClInclude>
+    <ClInclude Include="minifmod\xmeffects.h">
+      <Filter>minifmod</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="gcbitmap.bmp">
+      <Filter>Resources</Filter>
+    </Image>
+    <Image Include="SK.ICO">
+      <Filter>Resources</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="minifmod">
+      <UniqueIdentifier>{46927845-817c-44bb-9364-ee32063013f5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources">
+      <UniqueIdentifier>{d09870ec-4345-49c3-9620-78853dfb8183}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="DUNESHI2.XM">
+      <Filter>Resources</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resource.rc">
+      <Filter>Resources</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>
