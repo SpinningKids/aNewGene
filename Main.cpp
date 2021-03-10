@@ -267,6 +267,8 @@ static LRESULT CALLBACK skWinProc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp) {
     case WM_DESTROY: 
       PostQuitMessage(0);
 		  return 0;
+    case WM_ERASEBKGND:
+        return 1;
   } 
   return DefWindowProc(wnd, msg, wp, lp);
 } 
@@ -1142,13 +1144,13 @@ int WINAPI WinMain(HINSTANCE hinstance,HINSTANCE hprevinstance,LPSTR lpcmdline,i
   int oldbpp = GetDeviceCaps(l_hDC, BITSPIXEL);
   int oldfreq = GetDeviceCaps(l_hDC, VREFRESH);
 
-	DEVMODE dmScreenSettings;
-	ZeroMemory (&dmScreenSettings, sizeof (DEVMODE));
-	dmScreenSettings.dmSize				= sizeof (DEVMODE);
-	dmScreenSettings.dmPelsWidth		= WIDTH;
-	dmScreenSettings.dmPelsHeight		= HEIGHT;
-	dmScreenSettings.dmBitsPerPel		= BITSPERPIXEL;
-	dmScreenSettings.dmFields			= DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
+  DEVMODE dmScreenSettings;
+  ZeroMemory (&dmScreenSettings, sizeof (DEVMODE));
+  dmScreenSettings.dmSize				= sizeof (DEVMODE);
+  dmScreenSettings.dmPelsWidth		= WIDTH;
+  dmScreenSettings.dmPelsHeight		= HEIGHT;
+  dmScreenSettings.dmBitsPerPel		= BITSPERPIXEL;
+  dmScreenSettings.dmFields			= DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
   if (ChangeDisplaySettings (&dmScreenSettings, CDS_FULLSCREEN) != DISP_CHANGE_SUCCESSFUL) {
     MessageBox(0, "FullScreen mode not available", WINDOW_TITLE, MB_OK);
   	windowStyle = WS_OVERLAPPEDWINDOW;
@@ -1170,21 +1172,35 @@ int WINAPI WinMain(HINSTANCE hinstance,HINSTANCE hprevinstance,LPSTR lpcmdline,i
   	SetPixelFormat(hDC, iPixelFormat, &pfd); 
   	if (hRC = wglCreateContext(hDC)) 
       wglMakeCurrent(hDC, hRC); 
-  	ShowWindow(hWND, SW_NORMAL);
+    ShowWindow(hWND, SW_HIDE);
     skInitDemoStuff();
     FSOUND_File_SetCallbacks(memopen, memclose, memread, memseek, memtell);
     if (music = (FSOUND_Init(44100, 0) && (fmodule = FMUSIC_LoadSong(MAKEINTRESOURCE(IDR_RC_RTDATA1), NULL))))
-      FMUSIC_PlaySong(fmodule);  
+        FMUSIC_PlaySong(fmodule);
+    bool once = true;
     panInitTimer();
     while (true) {
-  		MSG msg;
-  		if (PeekMessage(&msg,NULL,0,0,PM_REMOVE)) { 
-  			if (msg.message == WM_QUIT) 
+  	  MSG msg;
+  	  if (PeekMessage(&msg,NULL,0,0,PM_REMOVE)) { 
+  	  	if (msg.message == WM_QUIT) 
           break;
-  			TranslateMessage(&msg);
-  			DispatchMessage(&msg);
-  		} else
-  			skDraw();
+  	  	TranslateMessage(&msg);
+  	  	DispatchMessage(&msg);
+  	  } else {
+  	    if (once) {
+          glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+          glClearDepth(1);
+          glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+          skSwapBuffers();
+          ShowWindow(hWND, SW_SHOW);
+          if (panGetTime() > 0.5) {
+            panInitTimer();
+            once = false;
+          }
+        } else {
+            skDraw();
+        }
+      }
   	}
     if (music) {
   	  FMUSIC_FreeSong(fmodule);
