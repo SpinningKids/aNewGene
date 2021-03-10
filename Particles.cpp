@@ -6,16 +6,6 @@ Vector3 NullForceField(Particles &p, int num) {
   return zero3;
 }
 
-Vector3 Test(Particles &p, int num) {
-  Vector3 pn(p.parts[num].position.x*0.05, p.parts[num].position.y*0.05, p.parts[num].position.z*0.05);
-  float acc = 200;
-  return Vector3(
-    30+200*vnoise(pn.y, pn.z), 
-    200*(vnoise(pn.z, pn.x) - 2*pn.y), 
-    200*vnoise(pn.x, pn.y)
-  );
-}
-
 Particles::Particles(int _num) : maxnum(_num), num(0), parts(new ParticleInfo[_num]), force(0), wind(0) {
 }
 
@@ -47,7 +37,7 @@ void Particles::move(float dt) {
     if (force) a += (*force)(*this, i);
     Vector3 s(parts[i].speed);
     if (wind) s -= (*wind)(*this, i);
-    a -= (friction*6.28*parts[i].size*parts[i].size)*s;
+    a -= (friction*6.28f*parts[i].size*parts[i].size)*s;
     a *= dt/parts[i].mass;     
     parts[i].position += (0.5*a+parts[i].speed)*dt;
     parts[i].speed += a;

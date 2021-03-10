@@ -37,11 +37,10 @@
 #define ORIGINAL_WIDTH 640
 #define ORIGINAL_HEIGHT 480
 
-#define LOGO_WIDTH (WIDTH*256/1280)
-#define LOGO_HEIGHT (WIDTH*63/1280)
+#define LOGO_WIDTH (WIDTH*256.f/1280)
+#define LOGO_HEIGHT (WIDTH*63.f/1280)
 
-const double piover180 = 0.0174532925199432957692369076848861;
-
+#define SAMPLERATE 96000
 bool greets = false;
 
 //globals
@@ -80,15 +79,16 @@ typedef struct {
 
 unsigned int memopen(char *name) {
     HRSRC rec = FindResourceEx(GetModuleHandle(nullptr), "RC_RTDATA", name, 0);
-    HGLOBAL handle = LoadResource(nullptr, rec);
-    MEMFILE* memfile = new MEMFILE{
-        (int)SizeofResource(nullptr, rec),
-        0,
-        LockResource(handle),
-    };
-
-
-	return (unsigned int)memfile;
+    if (rec) {
+        HGLOBAL handle = LoadResource(nullptr, rec);
+        MEMFILE* memfile = new MEMFILE{
+            (int)SizeofResource(nullptr, rec),
+            0,
+            LockResource(handle),
+        };
+	    return (unsigned int)memfile;
+    }
+    return -1;
 }
 
 void memclose(unsigned int handle) {
@@ -194,7 +194,7 @@ GLTexture *loadTexture(int resid, int logsize) {
         1,
         32,
         BI_RGB,
-        4*txsize*txsize,
+        (DWORD)(4*txsize*txsize),
         0,
         0,
         0,
@@ -204,14 +204,14 @@ GLTexture *loadTexture(int resid, int logsize) {
     GetDIBits(displaydc, h, 0, txsize, texture, (BITMAPINFO *)&a, DIB_RGB_COLORS);
     GLfloat *tex = ret->getImage();
     const float un255 = 1.0f/255.0f;
-    int i;
-    for(i = 0; i < txsize*192; i++) {
-        tex[i*4] = tex[i*4+1] = tex[i*4+2] = texture[i*4]*un255;
-        tex[i*4+3] = 1.0f;
+    int topsize = txsize * 3 / 4;
+    for (int i = 0; i < txsize * topsize; i++) {
+        tex[i * 4] = tex[i * 4 + 1] = tex[i * 4 + 2] = texture[i * 4] * un255;
+        tex[i * 4 + 3] = 1.0f;
     }
-    for(; i < txsize*txsize; i++) {
-        tex[i*4] = tex[i*4+1] = tex[i*4+2] = 1.0f;
-        tex[i*4+3] = 1.0f-texture[i*4]*un255;
+    for (int i = txsize * topsize; i < txsize * txsize; i++) {
+        tex[i * 4] = tex[i * 4 + 1] = tex[i * 4 + 2] = 1.0f;
+        tex[i * 4 + 3] = 1.0f - texture[i * 4] * un255;
     }
     ret->update();
     delete[] texture;
@@ -233,17 +233,17 @@ static void panInitTimer() {
 	QueryPerformanceFrequency((LARGE_INTEGER *)&timerfrq);
 }
 
-static double panGetTime() {
+static float panGetTime() {
     if (music)
     {
         MMTIME mmtime;
         mmtime.wType = TIME_SAMPLES;
         waveOutGetPosition(FSOUND_WaveOutHandle, &mmtime, sizeof(mmtime));
-        return mmtime.u.ticks/44100.f;
+        return mmtime.u.ticks/(float)SAMPLERATE;
     } else {
         __int64 a;
         QueryPerformanceCounter((LARGE_INTEGER *)&a);
-        return (double)(a - timerstart)/(double)(timerfrq);
+        return (a - timerstart)/(float)(timerfrq);
     }
 }
 
@@ -285,7 +285,7 @@ struct NoiseField : Field {
     }
 };
 
-#define quattroterzipigreco 4.1887902047863909846168578443727
+#define quattroterzipigreco 4.1887902047863909846168578443727f
 
 struct ArchimedesField : Field {
     float density;
@@ -313,20 +313,19 @@ static void algheTraICapelli(float t) {
     panViewOrthoModified();
     const int cosi = 120;
     const int steps = 20;
-    int i, j;
-    for(i = 0; i < cosi; i++) {
-        float phase = i*6.28/cosi + 0.1*vnoise(i, t);
-        float rho = 300-t*30+20*vnoise(t, i)+150*vnoise(i);
+    for(int i = 0; i < cosi; i++) {
+        float phase = i*6.28f/cosi + 0.1f*vnoise((float)i, t);
+        float rho = 300-t*30+20*vnoise(t, (float)i)+150*vlattice(i);
         glBegin(GL_QUAD_STRIP);
-        for(j = 0; j <= steps; j++) {
-            float ph = phase+0.1*vnoise(i, 0.1*j, t);
-            float sz = 0.2*(j+1);
-            float rh = rho+10*(j+1)+vnoise(0.1*j, i, t);
-            float xb = rh*cos(ph)+320;
-            float yb = rh*sin(ph)+240;
-            glColor4f(0.8f, 0.1*vlattice(1, i)+0.05, 0.1*vlattice(2, i)+0.05, 0.01*(steps-j));
-            float sph = sz*sin(ph);
-            float cph = sz*cos(ph);
+        for(int j = 0; j <= steps; j++) {
+            float ph = phase+0.1f*vnoise((float)i, 0.1f*j, t);
+            float sz = 0.2f*(j+1);
+            float rh = rho+10*(j+1)+vnoise(0.1f*j, (float)i, t);
+            float xb = rh*cosf(ph)+320;
+            float yb = rh*sinf(ph)+240;
+            glColor4f(0.8f, 0.1f*vlattice(1, i)+0.05f, 0.1f*vlattice(2, i)+0.05f, 0.01f*(steps-j));
+            float sph = sz*sinf(ph);
+            float cph = sz*cosf(ph);
             glVertex2f(xb-sph, yb+cph);
             glVertex2f(xb+sph, yb-cph);
         }
@@ -405,7 +404,7 @@ void drawSmoke(float t) {
         centre += fumo1->parts[i].position;
     }
     if (fumo1->num > 0) {
-        centre /= fumo1->num;
+        centre /= (float)fumo1->num;
     }
     float fov = 90;
 	glViewport(0,0,WIDTH,HEIGHT);
@@ -429,7 +428,7 @@ void drawSmoke(float t) {
     
     glBegin(GL_QUADS);
     
-    glColor4f(0.7, 0.75, 0.8, 1);
+    glColor4f(0.7f, 0.75f, 0.8f, 1);
     
     glVertex3f(-50*30-900, -100, -50*30-600);
     glVertex3f(50*30-900, -100, -50*30-600);
@@ -514,7 +513,7 @@ void drawSmoke2(float t, int v) {
     glColor4f(1,1,1,1);
     glVertex2f(0, HEIGHT/2);
     glVertex2f(WIDTH, HEIGHT/2);
-    glColor4f(0.85, 0.875, 0.9, 1);
+    glColor4f(0.85f, 0.875f, 0.9f, 1);
     glVertex2f(WIDTH, 0);
     glVertex2f(0, 0);
     glEnd();
@@ -578,13 +577,13 @@ static void elefantiTraICapelli3d(float t, int steps, float tphx, float tphz, in
 
     const int cosi = 30;
     const float thick = 20;
-    const float k = 200/steps;
+    const float k = 200.f/steps;
 
     for(int i = 0; i < cosi; i++) {
       
-        float s = 0.5*thick/steps; //(i*thick/cosi)/steps;
+        float s = 0.5f*thick/steps; //(i*thick/cosi)/steps;
         
-        Vector3 p = pf*(-3.0*i/cosi);
+        Vector3 p = pf*(-3.0f*i/cosi);
         float phx = tphx;
         float phz = tphz;
         glBegin(GL_QUAD_STRIP);
@@ -605,22 +604,22 @@ static void elefantiTraICapelli3d(float t, int steps, float tphx, float tphz, in
 //            float rotx = vnoise(0.1f*i+ rot*1.2f*j/steps+t*0.15+ t*vlattice(i, 0)*0.05f)*j*j*10.0f/(steps*steps)+0.1f*vnoise((60.f*j)/steps)+0.001f*vlattice(1, i);
 //            float rotz = vnoise(0.1f*i+ rot*1.2f*j/steps+t*0.15+ t*vlattice(i, 1)*0.05f)*j*j*10.0f/(steps*steps)+0.1f*vnoise((60.f*j)/steps)+0.001f*vlattice(2, i);
             
-            float rotx = vnoise(0.1f*i, rot*1.2f*j/steps+t*0.15+ t*vlattice(i)*0.05f)*j*j*10.0f/(steps*steps)+0.1f*vnoise((60.f*j)/steps)+0.001f*vlattice(i)+0.5*vnoise(t*0.3-j*0.1, 1*((float)i)/cosi);
-            float rotz = vnoise(0.1f*i+10, rot*1.2f*j/steps+t*0.15+ t*vlattice(i)*0.05f)*j*j*10.0f/(steps*steps)+0.1f*vnoise((60.f*j)/steps)+0.001f*vlattice(i)+0.5*vnoise(t*0.3+3-j*0.1, 1*((float)i)/cosi);
+            float rotx = vnoise(0.1f*i, rot*1.2f*j/steps+t*0.15f+ t*vlattice(i)*0.05f)*j*j*10.0f/(steps*steps)+0.1f*vnoise((60.f*j)/steps)+0.001f*vlattice(i)+0.5f*vnoise(t*0.3f-j*0.1f, 1*((float)i)/cosi);
+            float rotz = vnoise(0.1f*i+10, rot*1.2f*j/steps+t*0.15f+ t*vlattice(i)*0.05f)*j*j*10.0f/(steps*steps)+0.1f*vnoise((60.f*j)/steps)+0.001f*vlattice(i)+0.5f*vnoise(t*0.3f+3-j*0.1f, 1*((float)i)/cosi);
             
 //            float rotx = 2*vnoise(t*0.2-j*0.1, 20*((float)i)/cosi);
 //            float rotz = 2*vnoise(t*0.2+3-j*0.1, 20*((float)i)/cosi);
 //            rot = 0.04*(rot-0.5)*(1.0*steps-j)/steps;
-            rotx = 0.07*rotx;
-            rotz = 0.07*rotz;
+            rotx = 0.07f*rotx;
+            rotz = 0.07f*rotz;
             phx = phx+rotx;
             phz = phz+rotz;
 //            float k1 = k+vnoise(i, j, t)*0.01;
             float sz = s*(steps-j);
             
-            delta.x = sin(phx);
-            delta.y = cos(phx)*cos(phz);
-            delta.z = sin(phz);
+            delta.x = sinf(phx);
+            delta.y = cosf(phx)*cosf(phz);
+            delta.z = sinf(phz);
             
             p += k*delta;
         
@@ -628,39 +627,43 @@ static void elefantiTraICapelli3d(float t, int steps, float tphx, float tphz, in
       
             delta = (sz*(delta*up))*rt-(sz*(delta*rt))*up;
             
-            float alpha = 0.005*(j+10)+0.25;
-            float alpha2 = (j<10)?0.666:(j<15)?(j/15.0f):1;
+            float alpha = 0.005f*(j+10)+0.25f;
+            float alpha2 = (j<10)?0.666f:(j<15)?(j/15.0f):1;
             
             
             switch (view) {
-            case 0: glColor4f(
-                (cr+0.3f-j*0.001f)*alpha+1-alpha,
-                (cg+0.3f)*alpha+1-alpha,
-                (0.0025*(j+10))*alpha+1-alpha,
-                alpha2
-              );
-              break;
-            case 1: glColor4f(
-                (cr+0.5f-j*0.001f)*alpha+1-alpha,
-                (cg+0.2f)*alpha+1-alpha,
-                (0.0025*(j+10))*alpha+1-alpha,
-                alpha2
-              );
-              break;
-            case 2: glColor4f(
-                (j*0.001f)*alpha+1-alpha,
-                (cg+0.25f)*alpha+1-alpha,
-                (cb+0.525f+ 0.0025*j)*alpha+1-alpha,
-                alpha2
-              );
-              break;
-            case 3: glColor4f(
-                (cr+0.3f-j*0.001f)*alpha+1-alpha,
-                (cg+0.2f)*alpha+1-alpha,
-                (cb+0.425f+ 0.0025*j)*alpha+1-alpha,
-                alpha2
-              );
-              break;
+            case 0: 
+                glColor4f(
+                    (cr + 0.3f - j * 0.001f) * alpha + 1 - alpha,
+                    (cg + 0.3f) * alpha + 1 - alpha,
+                    (0.0025f * (j + 10)) * alpha + 1 - alpha,
+                    alpha2
+                );
+                break;
+            case 1: 
+                glColor4f(
+                    (cr + 0.5f - j * 0.001f) * alpha + 1 - alpha,
+                    (cg + 0.2f) * alpha + 1 - alpha,
+                    (0.0025f * (j + 10)) * alpha + 1 - alpha,
+                    alpha2
+                );
+                break;
+            case 2: 
+                glColor4f(
+                    (j*0.001f)*alpha+1-alpha,
+                    (cg+0.25f)*alpha+1-alpha,
+                    (cb+0.525f+ 0.0025f*j)*alpha+1-alpha,
+                    alpha2
+                );
+                break;
+            case 3: 
+                glColor4f(
+                    (cr+0.3f-j*0.001f)*alpha+1-alpha,
+                    (cg+0.2f)*alpha+1-alpha,
+                    (cb+0.425f+ 0.0025f*j)*alpha+1-alpha,
+                    alpha2
+                );
+                break;
             }
             
 //            glColor4f(cr*0.2f+0.3f-j*0.001f, cg*0.2f+0.3f, cb*0.2f+0.0f, 0.0025*(j+10));
@@ -702,7 +705,7 @@ void drawLandscapeTrees(float t, int view) {
     for(int i = 10; i < 30; i+=2) {
         for(int j = 10; j < 30; j+=2) {
             glPushMatrix();
-            glTranslatef((i+0.5)*100-2000, (landscape[i][j]+landscape[i+1][j]+landscape[i+1][j+1]+landscape[i][j+1]), (j+0.5)*100-2000);
+            glTranslatef((i+0.5f)*100-2000, (landscape[i][j]+landscape[i+1][j]+landscape[i+1][j+1]+landscape[i][j+1]), (j+0.5f)*100-2000);
             glCallList(mylist+(((i+j)/2)&1));
             glPopMatrix();
         }
@@ -727,13 +730,13 @@ void scenaElefantiSferici(float t, int view) {
     Vector3 pos[10];
     float size[10];
     for(int i = 0; i < 10; i++) {
-        pos[i] = 50*Vector3(vnoise(t*0.1, 1, i), vnoise(t*0.1, 2, i), vnoise(t*0.1, 3, i));
-        size[i] = vnoise(i)*10+20;
+        pos[i] = 50*Vector3(vnoise(t*0.1f, 1, (float)i), vnoise(t*0.1f, 2, (float)i), vnoise(t*0.1f, 3, (float)i));
+        size[i] = vlattice(i)*10+20;
         glPushMatrix();
       
         glTranslatef(pos[i].x, pos[i].y, pos[i].z);
-        glRotatef(360*vnoise(t*0.1, 5, i), 1, 0, 0);
-        glRotatef(360*vnoise(t*0.1, 6, i), 0, 1, 0);
+        glRotatef(360*vnoise(t*0.1f, 5, (float)i), 1, 0, 0);
+        glRotatef(360*vnoise(t*0.1f, 6, (float)i), 0, 1, 0);
         glScalef(size[i]/150.0f, size[i]/150.0f, size[i]/150.0f);
         glTranslatef(0, -140, 0);
       
@@ -749,7 +752,7 @@ void scenaElefantiSferici(float t, int view) {
     glDisable(GL_DEPTH_TEST);
     glBegin(GL_QUADS);
     for(int i = 0; i < 10; i++) {
-      glColor4f(0.7+vlattice((i), 6)*0.07, 0.515+vlattice((i), 7)*0.0515, 0.67+vlattice((i), 8)*0.067, 0.5f);
+      glColor4f(0.7f+vlattice((i), 6)*0.07f, 0.515f+vlattice((i), 7)*0.0515f, 0.67f+vlattice((i), 8)*0.067f, 0.5f);
     
       Vector3 sur(ur);
       Vector3 sul(ul);
@@ -797,10 +800,10 @@ void scenaElefanti(float t, int view, int view2) {
         static bool once = true;
         if (once) {
             for(int i = 0; i < fiori1->num; i++) {
-                fiori1->parts[i].r = fiori1->parts[i].r*0.5+0.5;
-                fiori1->parts[i].g = fiori1->parts[i].g*0.5+0.5;
-                fiori1->parts[i].b = fiori1->parts[i].b*0.5+0.5;
-                fiori1->parts[i].a *= 0.8;
+                fiori1->parts[i].r = fiori1->parts[i].r*0.5f+0.5f;
+                fiori1->parts[i].g = fiori1->parts[i].g*0.5f+0.5f;
+                fiori1->parts[i].b = fiori1->parts[i].b*0.5f+0.5f;
+                fiori1->parts[i].a *= 0.8f;
             }
             once = false;
         }    
@@ -878,12 +881,12 @@ static void skDraw() {
     glClearDepth(1);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
     
-    static const float base = 7.685;
+    static const float base = 7.685f;
     int timing = (int)(t/base);
     float basetime = timing*base;
     if (timing > 11) {
-      timing = 12+(t-11.25*base)*2/base;
-      basetime = 11.25*base+(timing-12)*base/2;
+      timing = 12+(int)((t-11.25f*base)*2/base);
+      basetime = 11.25f*base+(timing-12)*base/2;
     }
     float scenetime = t-basetime;
     
@@ -899,18 +902,18 @@ static void skDraw() {
 //    timing += 20;
     if (timing < 2) { // vermi 1                    timing 0, 1
       if (scenetime < 1.5) {
-          algheTraICapelli(t*0.5-1);
-      }  else if (scenetime < 1.675) {
-          algheTraICapelli(t*0.5-0.125*2-1);
-      } else if (scenetime < 3.833) {
-          algheTraICapelli(t*0.5-0.25*2-1);
-      } else if (scenetime < 5.7495) {
-          algheTraICapelli(t*0.5+0.25-1);
+          algheTraICapelli(t*0.5f-1);
+      }  else if (scenetime < 1.675f) {
+          algheTraICapelli(t*0.5f-0.125f*2-1);
+      } else if (scenetime < 3.833f) {
+          algheTraICapelli(t*0.5f-0.25f*2-1);
+      } else if (scenetime < 5.7495f) {
+          algheTraICapelli(t*0.5f+0.25f-1);
       } else {
-          algheTraICapelli(t*0.5+0.75-1);
+          algheTraICapelli(t*0.5f+0.75f-1);
       }
     } else if (timing < 4) { // vermi 2             timing 2, 3
-        algheTraICapelli(5*timing+t*0.5-5+0.5*noting);
+        algheTraICapelli(5*timing+t*0.5f-5+0.5f*noting);
     } else if (timing < 7) { // fumo che sale       timing 4, 5, 6
         drawSmoke(t);
         if (timing == 6) {
@@ -926,7 +929,7 @@ static void skDraw() {
         const int syncs[] = {4, 6, 14, 32, 34, 36, 38, 44, 48, 49, 68, 70, 78, 84, 88, 90, 96, 98, 100, 102};
         while (noting2 >= syncs[spos]) {
             for(int i = 0; i < 5; i++) {
-                fiori1->add(Vector3(50*vlattice((spos*5+i), 1), 50*vlattice((spos*5+i), 2), 100*vlattice((spos*5+i), 3)-100-spos*10), zero3, (vlattice((spos*5+i), 4)*10+30)/3, (vlattice((spos*5+i), 5)*10+30)/600, 0.7+vlattice((spos*5+i), 6)*0.07, 0.515+vlattice((spos*5+i), 7)*0.0515, 0.67+vlattice((spos*5+i), 8)*0.067, 0.5f, t);
+                fiori1->add(Vector3(50*vlattice((spos*5+i), 1), 50*vlattice((spos*5+i), 2), 100*vlattice((spos*5+i), 3)-100-spos*10), zero3, (vlattice((spos*5+i), 4)*10+30)/3, (vlattice((spos*5+i), 5)*10+30)/600, 0.7f+vlattice((spos*5+i), 6)*0.07f, 0.515f+vlattice((spos*5+i), 7)*0.0515f, 0.67f+vlattice((spos*5+i), 8)*0.067f, 0.5f, t);
             }
             spos++;
         }
@@ -941,7 +944,7 @@ static void skDraw() {
         panViewOrtho();
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glColor4f(0, 0, 0, vnoise(t*20)*2+1.5);
+        glColor4f(0, 0, 0, vnoise(t*20)*2+1.5f);
         greetscreds->use();
         glBegin(GL_QUADS);
         glTexCoord2f(0, 0.75+ 1 / 256.0);
@@ -1021,14 +1024,14 @@ void skInitDemoStuff()
     glBegin(GL_QUADS);
     for(int i = 0; i < 95; i+=2) {
         for(int j = 0; j < 99; j++) {
-            float g1 = vlattice(i/10, j/10, 1)*0.03;
-            float g2 = vlattice((i+5)/10, (j)/10, 2)*0.03;
-            float g3 = vlattice(i/10, (j+5)/10, 2)*0.03;
-            glColor4f(0.75+g1, 0.8+g2, 0.7+g3, 1);
-            glVertex3f((i-50)*30-900, landscape[i][j], (j-50)*30-600);
-            glVertex3f((i-49)*30-900, landscape[i+1][j], (j-50)*30-600);
-            glVertex3f((i-49)*30-900, landscape[i+1][j+1], (j-49)*30-600);
-            glVertex3f((i-50)*30-900, landscape[i][j+1], (j-49)*30-600);
+            float g1 = vlattice(i/10, j/10, 1)*0.03f;
+            float g2 = vlattice((i+5)/10, (j)/10, 2)*0.03f;
+            float g3 = vlattice(i/10, (j+5)/10, 2)*0.03f;
+            glColor4f(0.75f+g1, 0.8f+g2, 0.7f+g3, 1);
+            glVertex3f((i-50.f)*30.f-900.f, landscape[i][j], (j-50.f)*30.f -600.f);
+            glVertex3f((i-49.f)*30.f-900.f, landscape[i+1][j], (j-50.f)*30.f -600.f);
+            glVertex3f((i-49.f)*30.f-900.f, landscape[i+1][j+1], (j-49.f)*30.f -600.f);
+            glVertex3f((i-50.f)*30.f-900.f, landscape[i][j+1], (j-49.f)*30.f -600.f);
         }
     }  
     glEnd();
@@ -1038,15 +1041,15 @@ void skInitDemoStuff()
     glBegin(GL_QUADS);
     for(int i = 0; i < 40; i+=2) {
         for(int j = 0; j < 40; j++) {
-            float g1 = vlattice(i/10, j/10, 1)*0.015;
-            float g2 = vlattice((i+5)/10, (j)/10, 2)*0.015;
-            float g3 = vlattice(i/10, (j+5)/10, 2)*0.015;
+            float g1 = vlattice(i/10, j/10, 1)*0.015f;
+            float g2 = vlattice((i+5)/10, (j)/10, 2)*0.015f;
+            float g3 = vlattice(i/10, (j+5)/10, 2)*0.015f;
 //            if (j == 98) g = 0;
-            glColor4f(0.875+g1, 0.9+g2, 0.85+g3, 1);
-            glVertex3f((i)*100-2000, 4*landscape[i][j], (j)*100-2000);
-            glVertex3f((i+1)*100-2000, 4*landscape[i+1][j], (j)*100-2000);
-            glVertex3f((i+1)*100-2000, 4*landscape[i+1][j+1], (j+1)*100-2000);
-            glVertex3f((i)*100-2000, 4*landscape[i][j+1], (j+1)*100-2000);
+            glColor4f(0.875f+g1, 0.9f+g2, 0.85f+g3, 1);
+            glVertex3f((i)*100.f -2000.f, 4*landscape[i][j], (j)*100.f -2000.f);
+            glVertex3f((i+1)*100.f -2000.f, 4*landscape[i+1][j], (j)*100.f -2000.f);
+            glVertex3f((i+1)*100.f -2000.f, 4*landscape[i+1][j+1], (j+1)*100.f -2000.f);
+            glVertex3f((i)*100.f -2000.f, 4*landscape[i][j+1], (j+1)*100.f -2000.f);
         }
     }  
     glEnd();
@@ -1059,26 +1062,26 @@ void skInitDemoStuff()
 
     fumo1 = new Particles(150);
     for(int i = 0; i < fumo1->maxnum; i++) {
-      float g = vlattice(i)*0.2+0.2;
-      fumo1->add(Vector3(300*vlattice(i, 1), 50*vlattice(i, 1), 300*vlattice(i, 3)), zero3, 5*(vlattice(i, 4)*10+30), vlattice(i, 5)*10+30, g, g, g, 0.1, 0);
+      float g = vlattice(i)*0.2f+0.2f;
+      fumo1->add(Vector3(300*vlattice(i, 1), 50*vlattice(i, 1), 300*vlattice(i, 3)), zero3, 5*(vlattice(i, 4)*10+30), vlattice(i, 5)*10+30, g, g, g, 0.1f, 0);
     }
 //    fumo1->add(Vector3(200*vlattice(i, 1), 80*vlattice(i, 2), 200*vlattice(i, 3)), zero3, vlattice(i, 4)*10+30, vlattice(i, 5)*10+30);
-    fumo1->setFriction(0.0001/5.0f);
+    fumo1->setFriction(0.0001f/5.0f);
     fumo1->setForceField(new ArchimedesField(95));
-    fumo1->setWind(new NoiseField(0.01, 95));
+    fumo1->setWind(new NoiseField(0.01f, 95));
     smoke1 = smoke(8);
     
     fumo2 = new Particles(250);
     for(int i = 0; i < fumo2->maxnum; i++) {
-      float g = vlattice(i)*0.2+0.2;
-      fumo2->add(Vector3(400*vlattice(i, 1)-200, 0, 1500*vlattice(i, 3)-750), 100*Vector3(vlattice(i, 10), vlattice(i, 11)+0.2, vlattice(i, 12)), 5*(vlattice(i, 4)*10+30), vlattice(i, 5)*10+30, g, g, g, 0.1, 0);
+      float g = vlattice(i)*0.2f+0.2f;
+      fumo2->add(Vector3(400*vlattice(i, 1)-200, 0, 1500*vlattice(i, 3)-750), 100*Vector3(vlattice(i, 10), vlattice(i, 11)+0.2f, vlattice(i, 12)), 5*(vlattice(i, 4)*10+30), vlattice(i, 5)*10+30, g, g, g, 0.1f, 0);
     }
 //    fumo1->add(Vector3(200*vlattice(i, 1), 80*vlattice(i, 2), 200*vlattice(i, 3)), zero3, vlattice(i, 4)*10+30, vlattice(i, 5)*10+30);
-    fumo2->setFriction(0.0001);
-    fumo2->setForceField(new ZSpringField(0.5));
-    fumo2->setWind(new NoiseField(0.05, 150, Vector3(0, 0, 100)));
+    fumo2->setFriction(0.0001f);
+    fumo2->setForceField(new ZSpringField(0.5f));
+    fumo2->setWind(new NoiseField(0.05f, 150, Vector3(0, 0, 100)));
     for (int i = 0; i < 100; i++) {
-        fumo2->move(0.02);
+        fumo2->move(0.02f);
         for(int j = 0; j < fumo2->num; j++) {
             if (fumo2->parts[j].position.z > 900) fumo2->parts[j].position.z -= 1800;
         }
@@ -1089,10 +1092,10 @@ void skInitDemoStuff()
     
     fumo3 = new Particles(150);
     for(int i = 0; i < fumo1->maxnum; i++) {
-        float r = vlattice(i, 7)*0.5+0.5;
-        float g = vlattice(i, 8)*0.5+0.5;
-        float b = vlattice(i, 9)*0.5+0.5;
-        fumo3->add(Vector3(1500*vlattice(i, 1), 50*vlattice(i, 1)+500, 1500*vlattice(i, 3)), zero3, 5*(vlattice(i, 4)*10+30), vlattice(i, 5)*10+30, r, g, b, 0.2, 0);
+        float r = vlattice(i, 7)*0.5f+0.5f;
+        float g = vlattice(i, 8)*0.5f+0.5f;
+        float b = vlattice(i, 9)*0.5f+0.5f;
+        fumo3->add(Vector3(1500*vlattice(i, 1), 50*vlattice(i, 1)+500, 1500*vlattice(i, 3)), zero3, 5*(vlattice(i, 4)*10+30), vlattice(i, 5)*10+30, r, g, b, 0.2f, 0);
     }
 //    fumo1->add(Vector3(200*vlattice(i, 1), 80*vlattice(i, 2), 200*vlattice(i, 3)), zero3, vlattice(i, 4)*10+30, vlattice(i, 5)*10+30);
     fumo3->setFriction(0);
@@ -1105,9 +1108,9 @@ void skInitDemoStuff()
 //        fiori1->add(Vector3(200*vlattice(i, 1)-100, 200*vlattice(i, 1)-100, 1500*vlattice(i, 3)-750), zero3, (vlattice(i, 4)*10+30)/3, (vlattice(i, 5)*10+30)/60, 0.7, 0.515, 0.67, 0.5f);
 //        fumo1->add(Vector3(200*vlattice(i, 1), 80*vlattice(i, 2), 200*vlattice(i, 3)), zero3, vlattice(i, 4)*10+30, vlattice(i, 5)*10+30);
 //    }
-    fiori1->setFriction(0.0001);
-    fiori1->setForceField(new ZSpringField(0.03));
-    fiori1->setWind(new NoiseField(0.05, 200, Vector3(0, 0, 100)));
+    fiori1->setFriction(0.0001f);
+    fiori1->setForceField(new ZSpringField(0.03f));
+    fiori1->setWind(new NoiseField(0.05f, 200, Vector3(0, 0, 100)));
     
     pallino1=circle(4);
     pallino2=circle2(8);
@@ -1116,7 +1119,7 @@ void skInitDemoStuff()
 }
 
 int WINAPI WinMain(HINSTANCE hinstance,HINSTANCE hprevinstance,LPSTR lpcmdline,int ncmdshow) {
-    if (strcmpi(lpcmdline, "/g") == 0) {
+    if (_stricmp(lpcmdline, "/g") == 0) {
         greets = true;
     }
     g_hinstance = hinstance;
@@ -1188,7 +1191,7 @@ int WINAPI WinMain(HINSTANCE hinstance,HINSTANCE hprevinstance,LPSTR lpcmdline,i
                     skSwapBuffers();
                     ShowWindow(hWND, SW_SHOW);
                     if (panGetTime() > 0.5) {
-                        if (music = (FSOUND_Init(44100, 0) && (fmodule = FMUSIC_LoadSong(MAKEINTRESOURCE(IDR_RC_RTDATA1), nullptr)))) {
+                        if (music = (FSOUND_Init(SAMPLERATE, 0) && (fmodule = FMUSIC_LoadSong(MAKEINTRESOURCE(IDR_RC_RTDATA1), nullptr)))) {
                             FMUSIC_PlaySong(fmodule);
                         }
                         panInitTimer();

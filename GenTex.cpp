@@ -51,15 +51,15 @@ GLTexture *circle(int logsize) {
       float y = m*j-1.f;
       float col;
       float r = x*x+y*y;
-      float kr = 2*sqrt(x*x+y*y)-1.f;
+      float kr = 2*sqrtf(x*x+y*y)-1.f;
       if (r>1)
         col = 0;
       else
         col = (1-r)*(1-r);//abs(kr);
 //      col = 0.3*(2+0.5*(vnoise(5*r, 10*x, 10*y)+vnoise(10*r, 20*x, 20*y)+vnoise(20*r, 40*x, 40*y)+vnoise(40*r, 80*x, 80*y)))*(1-r);
-      tex[(((i<<logsize)+j)<<2)+0] = 1-col*0.25;
-      tex[(((i<<logsize)+j)<<2)+1] = 1-col*0.25;
-      tex[(((i<<logsize)+j)<<2)+2] = 1-col*0.25;
+      tex[(((i<<logsize)+j)<<2)+0] = 1-col*0.25f;
+      tex[(((i<<logsize)+j)<<2)+1] = 1-col*0.25f;
+      tex[(((i<<logsize)+j)<<2)+2] = 1-col*0.25f;
       tex[(((i<<logsize)+j)<<2)+3] = col;
     }
   }
@@ -78,12 +78,12 @@ GLTexture *smoke(int logsize) {
       float y = m*j-1.f;
       float col;
       float r = x*x+y*y;
-      float kr = 2*sqrt(x*x+y*y)-1.f;
+      float kr = 2*sqrtf(x*x+y*y)-1.f;
 //      if (r>1)
 //        col = 0;
 //      else
 //        col = 1-r;//abs(kr);
-      col = 0.3*(2+0.5*(vnoise(5*r, 10*x, 10*y)+vnoise(10*r, 20*x, 20*y)+vnoise(20*r, 40*x, 40*y)+vnoise(40*r, 80*x, 80*y)))*(1-r);
+      col = 0.3f*(2+0.5f*(vnoise(5*r, 10*x, 10*y)+vnoise(10*r, 20*x, 20*y)+vnoise(20*r, 40*x, 40*y)+vnoise(40*r, 80*x, 80*y)))*(1-r);
       tex[(((i<<logsize)+j)<<2)+0] = 1;
       tex[(((i<<logsize)+j)<<2)+1] = 1;
       tex[(((i<<logsize)+j)<<2)+2] = 1;
@@ -105,13 +105,13 @@ GLTexture *circle2(int logsize) {
       float y = m*j-1.f;
       float col;
       float r = x*x+y*y;
-      float kr = 2*sqrt(x*x+y*y)-1.f;
+      float kr = 2*sqrtf(x*x+y*y)-1.f;
       if (r>1)
         col = 0;
       else {
         float tmp = 1;
-        if (r > 0.95) tmp = (1-r)/0.05;
-        col = tmp*(1-0.5*(1-r)*(1-r)) ;//abs(kr);
+        if (r > 0.95f) tmp = (1-r)/0.05f;
+        col = tmp*(1-0.5f*(1-r)*(1-r)) ;//abs(kr);
       }
 //      col = 0.3*(2+0.5*(vnoise(5*r, 10*x, 10*y)+vnoise(10*r, 20*x, 20*y)+vnoise(20*r, 40*x, 40*y)+vnoise(40*r, 80*x, 80*y)))*(1-r);
       tex[(((i<<logsize)+j)<<2)+0] = 1;

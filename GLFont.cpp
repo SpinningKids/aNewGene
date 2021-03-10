@@ -44,7 +44,7 @@ void GLFont::printf(const char *fmt, ...) const {
 	if (fmt == NULL)
 		return;
 	va_start(ap, fmt);
-	vsprintf(text, fmt, ap);
+	vsprintf_s(text, fmt, ap);
 	va_end(ap);
 
   unsigned int l = strlen(text);
@@ -83,7 +83,7 @@ void GLFont::printfx(float x, float y, float gs, float gr, float lsx, float lsy,
 	if (fmt == NULL)
 		return;
 	va_start(ap, fmt);
-	vsprintf(text, fmt, ap);
+	vsprintf_s(text, fmt, ap);
 	va_end(ap);
 
   unsigned int l = strlen(text);
