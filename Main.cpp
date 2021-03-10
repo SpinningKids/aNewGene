@@ -93,6 +93,9 @@ unsigned int memopen(char *name) {
 
 void memclose(unsigned int handle) {
 	MEMFILE *memfile = (MEMFILE *)handle;
+    if (memfile) {
+        UnlockResource((HGLOBAL)(memfile->data));
+    }
 	delete memfile;
 }
 
@@ -211,6 +214,7 @@ GLTexture *loadTexture(int resid, int logsize) {
         tex[i*4+3] = 1.0f-texture[i*4]*un255;
     }
     ret->update();
+    delete[] texture;
     DeleteObject(h);
     return ret;
 }
