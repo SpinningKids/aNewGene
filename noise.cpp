@@ -14,11 +14,11 @@
 //#define RANDMASK 0x7fffffff
 //#define RANDNBR (random()/(float)(RANDMASK))
 
-int random() {
+static int pan_random() {
   return (rand()<<16)+(rand()<<1)+(rand()&1);
 }
 
-void srandom(int seed) {
+static void pan_srandom(int seed) {
   srand(seed);
 }
 
@@ -26,7 +26,7 @@ void srandom(int seed) {
 
 #define FLOOR(x) ((int)floor(x))
 
-float catmullrom(float x, float knots[4]) {
+static float catmullrom(float x, const float knots[4]) {
   float c3 = -0.5f*knots[0]+1.5f*knots[1]-1.5f*knots[2]+0.5f*knots[3];
   float c2 =       knots[0]-2.5f*knots[1]+2.0f*knots[2]-0.5f*knots[3];
   float c1 = -0.5f*knots[0]              +0.5f*knots[2]              ;
@@ -43,16 +43,15 @@ int perm[TABSIZE];
 
 bool valueTabInit(int seed) {
   float *table = valueTab;
-  int i;
-  srandom(seed);
-  for(i = 0; i < TABSIZE; i++) {
-    *table++ = (float)(1. - 2.*i/(TABSIZE-1));
+  pan_srandom(seed);
+  for(int i = 0; i < TABSIZE; i++) {
+    *table++ = (float)(1.f - 2.f*i/(TABSIZE-1));
 //    *table++ = (float)(1. - 2.*RANDNBR);
     perm[i] = i;
   }
-  for(i = 0; i < 16*(TABSIZE); i++) {
-    int i1 = random() & TABMASK;
-    int i2 = random() & TABMASK;
+  for(int i = 0; i < 16*(TABSIZE); i++) {
+    int i1 = pan_random() & TABMASK;
+    int i2 = pan_random() & TABMASK;
     int tmp = perm[i1];
     perm[i1] = perm[i2];
     perm[i2] = tmp;
@@ -63,9 +62,8 @@ bool valueTabInit(int seed) {
 static bool init = valueTabInit(665);
 
 int index(int num, int idx[]) {
-  int i;
   int newidx = 0;
-  for(i = 0; i < num; i++)
+  for(int i = 0; i < num; i++)
     newidx = PERM(newidx+idx[i]);
   return newidx & (TABMASK);
 }
@@ -81,8 +79,7 @@ float vlattice(int idx) {
 float vnoise2(int off, int idx, int num, int ix[], float fx[]) {
   float knots[4];
   ix[off] -= 1;
-  int i;
-  for(i = -1; i <= 2; i++) {
+  for(int i = -1; i <= 2; i++) {
     if (off > 0) {
       knots[i+1] = vnoise2(off-1, PERM(idx+ix[off]), num, ix, fx);
     } else {
@@ -95,10 +92,9 @@ float vnoise2(int off, int idx, int num, int ix[], float fx[]) {
 }
 
 float vnoise(int num, float x[]) {
-  int i;
   int ix[16];// = new int[num];
   float fx[16];// = new float[num];
-  for(i = 0; i < num; i++) {
+  for(int i = 0; i < num; i++) {
     ix[i] = FLOOR(x[i]);
     fx[i] = x[i] - ix[i];
   }

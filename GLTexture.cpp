@@ -7,7 +7,9 @@
 
 #include "GLTexture.h"
 #include <memory.h>
+#ifdef WIN32
 #include <Windows.h>
+#endif
 #include <gl/GL.h>
 
 GLTexture::GLTexture(int logsize) : mem_(new GLfloat[4 * (1 << logsize) * (1 << logsize)]), size_(1 << logsize), init_(false) {

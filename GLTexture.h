@@ -1,6 +1,7 @@
 
 /************************************
-  Code By: Pan/SpinningKids
+  REVISION LOG ENTRY
+  Revision By: pan
   Revised on 2/16/2002 10:11:37 AM
   Comments: creation
  ************************************/

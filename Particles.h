@@ -1,13 +1,14 @@
 
-#ifndef _PARTICLES_H_
-#define _PARTICLES_H_
+#ifndef PARTICLES_H_
+#define PARTICLES_H_
 
 #include "Math3.h"
 
 struct Particles;
 
 struct Field {
-  virtual Vector3 operator () (Particles &p, int num) = 0;
+    virtual Vector3 operator () (Particles &p, int num) = 0;
+    virtual ~Field() = default;
 };
 
 //typedef Vector3 Field(Particles &, int);
@@ -36,7 +37,7 @@ struct Particles {
   void remove(int n);
 
   void setFriction(float f) { friction = f; }
-  float getFriction() { return friction; }
+  float getFriction() const { return friction; }
 
   void setForceField(Field *f) { force = f; }
   Field *getForceField() { return force; }
@@ -48,4 +49,4 @@ struct Particles {
 
 };
 
-#endif // _PARTICLES_H_
+#endif // PARTICLES_H_

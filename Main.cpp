@@ -20,10 +20,6 @@
 #include <gl/GLU.h>
 #include <math.h>
 
-#ifdef USETEXT
-#include "GLFont.h"
-#endif
-
 #include "GenTex.h"
 #include "noise.h"
 #include "minifmod/minifmod.h"
@@ -46,10 +42,6 @@ bool greets = false;
 //globals
 
 HINSTANCE g_hinstance;
-
-#ifdef USETEXT
-GLFont *fontarial;
-#endif
 
 Particles *fumo1;
 Particles *fumo2;
@@ -270,7 +262,7 @@ struct FixedField : Field {
   Vector3 value;
   FixedField(const Vector3 &_value) : value(_value) {}
 
-  virtual Vector3 operator () (Particles &p, int i) { return value; }
+  Vector3 operator () (Particles &p, int i) override { return value; }
 };
 
 struct NoiseField : Field {
@@ -279,7 +271,7 @@ struct NoiseField : Field {
   
     NoiseField(float _scale, float _amplitude, const Vector3 &_carrier = zero3) : scale(_scale), amplitude(_amplitude), carrier(_carrier) {}
     
-    virtual Vector3 operator () (Particles &p, int i) { 
+    Vector3 operator () (Particles &p, int i) override { 
         Vector3 a = scale*p.parts[i].position;
         return Vector3(carrier.x+amplitude*vnoise(a.y, a.z), carrier.y+amplitude*vnoise(a.z, a.x), carrier.z+amplitude*vnoise(a.x, a.y));
     }
@@ -290,7 +282,7 @@ struct NoiseField : Field {
 struct ArchimedesField : Field {
     float density;
     ArchimedesField(float _density) : density(_density) {}
-    virtual Vector3 operator () (Particles &p, int i) { 
+    Vector3 operator () (Particles &p, int i) override { 
         float r = p.parts[i].size;
         return Vector3(0, density-p.parts[i].mass/(quattroterzipigreco*r*r*r), 0);
     }
@@ -299,7 +291,7 @@ struct ArchimedesField : Field {
 struct ZSpringField : Field {
     float k;
     ZSpringField(float _k) : k(_k) {}
-    virtual Vector3 operator () (Particles &p, int i) { 
+    Vector3 operator () (Particles &p, int i) override { 
 //        float r = sqrt(sqr(p.parts[i].position.x)+sqr(p.parts[i].position.y));
         return -k*Vector3(p.parts[i].position.x, p.parts[i].position.y, 0);
     }
@@ -451,14 +443,6 @@ void drawSmoke(float t) {
     drawParticles(*fumo1, smoke1);
     
     ot = t;
-
-#ifdef USETEXT
-    panViewOrtho();
-    glTranslatef(20, 70, 0);
-    glScalef(20, -20, 1);
-    glColor4f(0,0,0,1);
-    fontarial->printf("%d", fumo1->num);
-#endif
 };
 
 void drawSmoke2(float t, int v) {
@@ -532,16 +516,6 @@ void drawSmoke2(float t, int v) {
     drawParticles(*fiori1, pallino1);
     
     ot = t;
-
-#ifdef USETEXT
-    panViewOrtho();
-    
-    glColor4f(0,0,0,1);
-    glTranslatef(20, 70, 0);
-    glScalef(20, -20, 1);
-    glColor4f(0,0,0,1);
-    fontarial->printf("%d", fumo2->num);
-#endif
 };
 
 
@@ -974,14 +948,6 @@ static void skDraw() {
         drawFlashBianco(1-((t-basemezz)*32/base));
     }
     
-#ifdef USETEXT
-    panViewOrtho();
-    glTranslatef(20, 20, 0);
-    glScalef(20, -20, 1);
-    glColor4f(0,0,0,1);
-    fontarial->printf("%2.2f   %2.2f   %2.2f   %d   %2.2f   %d   %d", t, basetime, scenetime, timing, basenote, noting, quarting);
-#endif
-
 /*
     if (timing < 3) { // fumo che sale       timing 4, 5, 6
         drawSmoke(t);
@@ -1055,9 +1021,6 @@ void skInitDemoStuff()
     glEnd();
     glEndList();
 
-#ifdef USETEXT
-    fontarial = new GLFont(hDC, "Arial");
-#endif
 //	texturefont = perlin(7, 100, 0.6f, 0.5f, 2.5, true);
 
     fumo1 = new Particles(150);

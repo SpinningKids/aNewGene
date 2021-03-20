@@ -30,7 +30,11 @@
 *.exe
 *.out
 *.app
+
+# VS Specific
+.*.swp
 /.vs
 /Debug
 /Release
 *.user
+*.bak

@@ -1,5 +1,5 @@
 
-#include "math3.h"
+#include "Math3.h"
 
 const Vector3 zero3 = Vector3(0, 0, 0); 
 const Vector3 xversor = Vector3(1, 0, 0);

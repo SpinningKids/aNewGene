@@ -5,13 +5,10 @@
   Comments: Creation
  ************************************/
 
-#ifndef _GENTEX_H_
-#define _GENTEX_H_
+#ifndef GENTEX_H_
+#define GENTEX_H_
 
-#ifdef _MSC_VER
 #pragma once
-#pragma pack(push, _PACK_GENTEX_H_)
-#endif //_MSC_VER
 
 #include "GLTexture.h"
 
@@ -20,8 +17,4 @@ GLTexture *circle(int logsize);
 GLTexture *circle2(int logsize);
 GLTexture *smoke(int logsize);
 
-#ifdef _MSC_VER
-#pragma pack(pop, _PACK_GENTEX_H_)
-#endif //_MSC_VER
-
-#endif //_GENTEX_H_
+#endif // GENTEX_H_

@@ -10,8 +10,8 @@
 
 extern float vnoise(int num, float x[]);
 extern float vlattice(int num, int x[]);
-extern float vnoise(float x);
-extern float vlattice(int x);
+extern float vnoise(float t);
+extern float vlattice(int idx);
 
 inline float vnoise(float x, float y) {
   float a[] = {x, y};

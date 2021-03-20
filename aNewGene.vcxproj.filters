@@ -2,7 +2,6 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="GenTex.cpp" />
-    <ClCompile Include="GLFont.cpp" />
     <ClCompile Include="GLTexture.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MATH3.CPP" />
@@ -29,7 +28,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GenTex.h" />
-    <ClInclude Include="GLFont.h" />
     <ClInclude Include="GLTexture.h" />
     <ClInclude Include="Math3.h" />
     <ClInclude Include="noise.h" />
