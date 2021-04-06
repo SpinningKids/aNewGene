@@ -14,33 +14,33 @@ extern float vnoise(float t);
 extern float vlattice(int idx);
 
 inline float vnoise(float x, float y) {
-  float a[] = {x, y};
-  return vnoise(2, a);
+    float a[] = { x, y };
+    return vnoise(2, a);
 }
 
 inline float vnoise(float x, float y, float z) {
-  float a[] = {x, y, z};
-  return vnoise(3, a);
+    float a[] = { x, y, z };
+    return vnoise(3, a);
 }
 
 inline float vnoise(float x, float y, float z, float w) {
-  float a[] = {x, y, z, w};
-  return vnoise(4, a);
+    float a[] = { x, y, z, w };
+    return vnoise(4, a);
 }
 
 inline float vlattice(int x, int y) {
-  int a[] = {x, y};
-  return vlattice(2, a);
+    int a[] = { x, y };
+    return vlattice(2, a);
 }
 
 inline float vlattice(int x, int y, int z) {
-  int a[] = {x, y, z};
-  return vlattice(3, a);
+    int a[] = { x, y, z };
+    return vlattice(3, a);
 }
 
 inline float vlattice(int x, int y, int z, int w) {
-  int a[] = {x, y, z, w};
-  return vlattice(4, a);
+    int a[] = { x, y, z, w };
+    return vlattice(4, a);
 }
 
 

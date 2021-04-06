@@ -35,7 +35,7 @@ void GLTexture::update() {
     }
 }
 
-void GLTexture::use() {
+void GLTexture::use() const {
     if (!init_) {
         glDisable(GL_TEXTURE_2D);
     } else {

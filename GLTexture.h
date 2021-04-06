@@ -23,8 +23,8 @@ public:
     int getSize() const { return size_; }
 
     void update();
-    void use();
-    int getID() const { return txt_; }
+    void use() const;
+    unsigned int getID() const { return txt_; }
 };
 
 #endif // GLTEXTURE_H_

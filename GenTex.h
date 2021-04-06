@@ -8,11 +8,9 @@
 #ifndef GENTEX_H_
 #define GENTEX_H_
 
-#pragma once
-
 #include "GLTexture.h"
 
-GLTexture *perlin(int logsize, float freq, float amp, float base, float k, bool wrap);
+GLTexture* perlin(int logsize, float freq, float amp, float base, float k, bool wrap);
 GLTexture *circle(int logsize);
 GLTexture *circle2(int logsize);
 GLTexture *smoke(int logsize);
