@@ -30,14 +30,14 @@ void Particles::remove(int n) {
 } 
 
 void Particles::move(float dt) {
-  for(int i = 0; i < num; i++) {
-    Vector3 a(0,0,0);
-    if (force) a += (*force)(*this, i);
-    Vector3 s(parts[i].speed);
-    if (wind) s -= (*wind)(*this, i);
-    a -= (friction*6.28f*parts[i].size*parts[i].size)*s;
-    a *= dt/parts[i].mass;     
-    parts[i].position += (0.5*a+parts[i].speed)*dt;
-    parts[i].speed += a;
-  }
+    for (ParticleInfo* p = parts; p != parts + num; ++p) {
+        Vector3 a(0, 0, 0);
+        if (force) a += (*force)(*p);
+        Vector3 s(p->speed);
+        if (wind) s -= (*wind)(*p);
+        a -= (friction * 6.28f * p->size * p->size) * s;
+        a *= dt / p->mass;
+        p->position += (0.5 * a + p->speed) * dt;
+        p->speed += a;
+    }
 }

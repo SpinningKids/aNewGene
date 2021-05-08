@@ -10,15 +10,13 @@
  ************************************/
 
 #define WIN32_LEAN_AND_MEAN
-#define VC_EXTRALEAN
 
-#define WINDOW_CLASS_NAME "SKCLASS"
-#define WINDOW_TITLE "aNewGene"
+constexpr char WINDOW_CLASS_NAME[] = "SKCLASS";
+constexpr char WINDOW_TITLE[] = "aNewGene";
 
 #include <Windows.h>
 #include <mmsystem.h>
 #include <gl/GLU.h>
-#include <math.h>
 
 #include "GenTex.h"
 #include "noise.h"
@@ -26,17 +24,14 @@
 #include "resource.h"
 #include "Particles.h"
 
-#define WIDTH 2560
-#define HEIGHT 1440
-#define BITSPERPIXEL 32
-#define FULLSCREEN
-#define ORIGINAL_WIDTH 640
-#define ORIGINAL_HEIGHT 480
+int WIDTH = 640;
+int HEIGHT = 480;
+int BITSPERPIXEL = 32;
+constexpr bool FULLSCREEN = true;
+constexpr int ORIGINAL_WIDTH = 640;
+constexpr int ORIGINAL_HEIGHT = 480;
 
-#define LOGO_WIDTH (WIDTH*256.f/1280)
-#define LOGO_HEIGHT (WIDTH*63.f/1280)
-
-#define SAMPLERATE 96000
+constexpr int SAMPLERATE = 96000;
 bool greets = false;
 
 //globals
@@ -64,9 +59,9 @@ bool music = false;
 FMUSIC_MODULE *fmodule;
 
 typedef struct {
-	int length;
-	int pos;
-	void *data;
+    int length;
+    int pos;
+    void *data;
 } MEMFILE;
 
 unsigned int memopen(char *name) {
@@ -78,40 +73,40 @@ unsigned int memopen(char *name) {
             0,
             LockResource(handle),
         };
-	    return (unsigned int)memfile;
+        return (unsigned int)memfile;
     }
     return -1;
 }
 
 void memclose(unsigned int handle) {
-	MEMFILE *memfile = (MEMFILE *)handle;
+    MEMFILE *memfile = (MEMFILE *)handle;
     if (memfile) {
         UnlockResource((HGLOBAL)(memfile->data));
     }
-	delete memfile;
+    delete memfile;
 }
 
 int memread(void *buffer, int size, unsigned int handle) {
-	MEMFILE *memfile = (MEMFILE *)handle;
+    MEMFILE *memfile = (MEMFILE *)handle;
 
     if (memfile->pos + size >= memfile->length) {
         size = memfile->length - memfile->pos;
     }
-	memcpy(buffer, (char *)memfile->data+memfile->pos, size);
-	memfile->pos += size;
-	
-	return size;
+    memcpy(buffer, (char *)memfile->data+memfile->pos, size);
+    memfile->pos += size;
+    
+    return size;
 }
 
 void memseek(unsigned int handle, int pos, signed char mode) {
-	MEMFILE *memfile = (MEMFILE *)handle;
+    MEMFILE *memfile = (MEMFILE *)handle;
 
     if (mode == SEEK_SET) {
         memfile->pos = pos;
     } else if (mode == SEEK_CUR) {
-		memfile->pos += pos;
-	} else if (mode == SEEK_END) {
-		memfile->pos = memfile->length + pos;
+        memfile->pos += pos;
+    } else if (mode == SEEK_END) {
+        memfile->pos = memfile->length + pos;
     }
     if (memfile->pos > memfile->length) {
         memfile->pos = memfile->length;
@@ -119,8 +114,8 @@ void memseek(unsigned int handle, int pos, signed char mode) {
 }
 
 int memtell(unsigned int handle) {
-	MEMFILE *memfile = (MEMFILE *)handle;
-	return memfile->pos;
+    MEMFILE *memfile = (MEMFILE *)handle;
+    return memfile->pos;
 }
 
 // Base GL Related
@@ -130,9 +125,9 @@ HDC			hDC;
 HGLRC		hRC;
 
 static void panViewOrthoModified() {
-	glViewport(0,0,WIDTH,HEIGHT);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
+    glViewport(0,0,WIDTH,HEIGHT);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
     int w = ORIGINAL_HEIGHT * WIDTH / HEIGHT;
     if (w >= ORIGINAL_WIDTH) {
         int margin = (w - ORIGINAL_WIDTH) / 2;
@@ -142,8 +137,8 @@ static void panViewOrthoModified() {
         int margin = (h - ORIGINAL_HEIGHT) / 2;
         glOrtho(0, WIDTH, ORIGINAL_HEIGHT + margin, -margin, -1, 1);
     }
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
 }
 
 static void panViewOrtho() {
@@ -156,12 +151,12 @@ static void panViewOrtho() {
 }
 
 void panViewPerspectiveFOV(float fov) {
-	glViewport(0,0,WIDTH,HEIGHT);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluPerspective(fov,((float)WIDTH)/HEIGHT,0.1f,600.0f);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
+    glViewport(0,0,WIDTH,HEIGHT);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(fov,((float)WIDTH)/HEIGHT,0.1f,600.0f);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
 }
 
 static void skSwapBuffers() {
@@ -221,8 +216,8 @@ extern "C" {
 }
 
 static void panInitTimer() {
-	QueryPerformanceCounter((LARGE_INTEGER *)&timerstart);
-	QueryPerformanceFrequency((LARGE_INTEGER *)&timerfrq);
+    QueryPerformanceCounter((LARGE_INTEGER *)&timerstart);
+    QueryPerformanceFrequency((LARGE_INTEGER *)&timerfrq);
 }
 
 static float panGetTime() {
@@ -258,42 +253,40 @@ static LRESULT CALLBACK skWinProc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp) {
 
 // Particles Stuff
 
-struct FixedField : Field {
-  Vector3 value;
-  FixedField(const Vector3 &_value) : value(_value) {}
-
-  Vector3 operator () (Particles &p, int i) override { return value; }
+class FixedField : Field {
+    Vector3 value;
+public:
+    FixedField(const Vector3& _value) : value(_value) {}
+    Vector3 operator () (const ParticleInfo&) const override { return value; }
 };
 
-struct NoiseField : Field {
+class  NoiseField: public Field{
     float scale, amplitude;
     Vector3 carrier;
-  
+public:
     NoiseField(float _scale, float _amplitude, const Vector3 &_carrier = zero3) : scale(_scale), amplitude(_amplitude), carrier(_carrier) {}
-    
-    Vector3 operator () (Particles &p, int i) override { 
-        Vector3 a = scale*p.parts[i].position;
-        return Vector3(carrier.x+amplitude*vnoise(a.y, a.z), carrier.y+amplitude*vnoise(a.z, a.x), carrier.z+amplitude*vnoise(a.x, a.y));
+    Vector3 operator () (const ParticleInfo &p) const override {
+        Vector3 a = scale*p.position;
+        return { carrier.x + amplitude * vnoise(a.y, a.z), carrier.y + amplitude * vnoise(a.z, a.x), carrier.z + amplitude * vnoise(a.x, a.y) };
     }
 };
 
-#define quattroterzipigreco 4.1887902047863909846168578443727f
 
-struct ArchimedesField : Field {
+class ArchimedesField : public Field{
     float density;
+public:
     ArchimedesField(float _density) : density(_density) {}
-    Vector3 operator () (Particles &p, int i) override { 
-        float r = p.parts[i].size;
-        return Vector3(0, density-p.parts[i].mass/(quattroterzipigreco*r*r*r), 0);
+    Vector3 operator () (const ParticleInfo &p) const override {
+        constexpr float quattroterzipigreco = 4.1887902047863909846168578443727f;
+        return { 0, density - p.mass / (quattroterzipigreco * p.size * p.size * p.size), 0 };
     }
 };
 
 struct ZSpringField : Field {
     float k;
     ZSpringField(float _k) : k(_k) {}
-    Vector3 operator () (Particles &p, int i) override { 
-//        float r = sqrt(sqr(p.parts[i].position.x)+sqr(p.parts[i].position.y));
-        return -k*Vector3(p.parts[i].position.x, p.parts[i].position.y, 0);
+    Vector3 operator () (const ParticleInfo &p) const override {
+        return { -k * p.position.x, -k * p.position.y, 0 };
     }
 };
 
@@ -358,17 +351,14 @@ void drawParticles(Particles &ps, GLTexture *tex) {
     glBegin(GL_QUADS);
     for(int i = 0; i < ps.num ; i++) {
         
-        Vector3 &p = ps.parts[i].position;
+        const Vector3 &p = ps.parts[i].position;
         
         float s = ps.parts[i].size;
         
         glColor4f(ps.parts[i].r, ps.parts[i].g, ps.parts[i].b, ps.parts[i].a);
         
-        Vector3 sur(ur);
-        Vector3 sul(ul);
-        
-        sur *= s;
-        sul *= s;
+        const Vector3 sur = s*ur;
+        const Vector3 sul = s*ul;
         
         glTexCoord2f(0, 0);
         glVertex3fv((float *)&(p-sur));
@@ -399,12 +389,12 @@ void drawSmoke(float t) {
         centre /= (float)fumo1->num;
     }
     float fov = 90;
-	glViewport(0,0,WIDTH,HEIGHT);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluPerspective(fov,((float)WIDTH)/HEIGHT,0.1f,2000.0f);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
+    glViewport(0,0,WIDTH,HEIGHT);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(fov,((float)WIDTH)/HEIGHT,0.1f,2000.0f);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
     gluLookAt(150, 300, 150, centre.x, centre.y, centre.z, 0, 1, 0);
     
     glEnable(GL_FOG);
@@ -659,8 +649,8 @@ void drawLandscapeTrees(float t, int view) {
     glFogi(GL_FOG_MODE, GL_LINEAR);
     float a[3]= {1,1,1};
     glFogfv(GL_FOG_COLOR, a);
-    glFogf(GL_FOG_START, 600);
-    glFogf(GL_FOG_END, 1500);
+    glFogf(GL_FOG_START, 600.f);
+    glFogf(GL_FOG_END, 1500.f);
   
     glDisable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
@@ -669,9 +659,9 @@ void drawLandscapeTrees(float t, int view) {
     for(int i = 0; i < 2; i++) {
         glNewList(mylist+i, GL_COMPILE);
         if (view == 4) {
-            elefantiTraICapelli3d(t+i*100, 30, 0, 0, (2+i) & 3);
+            elefantiTraICapelli3d(t+i*100.f, 30, 0.f, 0.f, (2+i) & 3);
         } else {
-            elefantiTraICapelli3d(t+i*100, 30, 0, 0, view & 3);
+            elefantiTraICapelli3d(t+i*100.f, 30, 0.f, 0.f, view & 3);
         }
         glEndList();
     }
@@ -811,9 +801,6 @@ void scenaElefanti2(float t) {
     drawLandscapeTrees(t, 4);
     
     glDepthMask(false);
-//    static float ot = t;
-//    if (ot != t)
-//      fumo3->move(t-ot);
     drawParticles(*fumo3, smoke1);
     glDepthMask(true);
 }
@@ -914,6 +901,8 @@ static void skDraw() {
     } else if (timing < 22) { // lietofine                           timing 14 a seguire
         scenaElefanti(t, timing - 14, noting);
     } else { // dubbio
+        const float logo_width = WIDTH * 256.f / 1280;
+        const float logo_height = WIDTH * 63.f / 1280;
         scenaElefanti2(t);
         panViewOrtho();
         glEnable(GL_BLEND);
@@ -922,13 +911,13 @@ static void skDraw() {
         greetscreds->use();
         glBegin(GL_QUADS);
         glTexCoord2f(0, 0.75+ 1 / 256.0);
-        glVertex2f(WIDTH-LOGO_WIDTH, HEIGHT-LOGO_HEIGHT);
+        glVertex2f(WIDTH-logo_width, HEIGHT-logo_height);
         glTexCoord2f(0, 1.0);
-        glVertex2f(WIDTH-LOGO_WIDTH, HEIGHT);
+        glVertex2f(WIDTH-logo_width, HEIGHT);
         glTexCoord2f(1.0, 1.0);
         glVertex2f(WIDTH, HEIGHT);
         glTexCoord2f(1.0, 0.75 + 1 / 256.0);
-        glVertex2f(WIDTH, HEIGHT-LOGO_HEIGHT);
+        glVertex2f(WIDTH, HEIGHT-logo_height);
         glEnd();
         glDisable(GL_TEXTURE_2D);
     }
@@ -1093,43 +1082,55 @@ int WINAPI WinMain(HINSTANCE hinstance,HINSTANCE hprevinstance,LPSTR lpcmdline,i
     if (!RegisterClassEx(&winclass)) {
         return 0;
     }
-    PIXELFORMATDESCRIPTOR pfd = {sizeof(PIXELFORMATDESCRIPTOR), 1, PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER, PFD_TYPE_RGBA, BITSPERPIXEL, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 16, 1, 0, PFD_MAIN_PLANE, 0, 0, 0, 0}; // but his is even longer....
     unsigned int  iPixelFormat; 
-    RECT windowRect = {0, 0, WIDTH, HEIGHT};
     DWORD windowStyle, windowExtendedStyle;
 
-#ifdef FULLSCREEN
-    int oldwidth = GetDeviceCaps(l_hDC, HORZRES);
-    int oldheight = GetDeviceCaps(l_hDC, VERTRES);
-    int oldbpp = GetDeviceCaps(l_hDC, BITSPIXEL);
-    int oldfreq = GetDeviceCaps(l_hDC, VREFRESH);
-  
-    DEVMODE dmScreenSettings;
-    ZeroMemory (&dmScreenSettings, sizeof (DEVMODE));
-    dmScreenSettings.dmSize				= sizeof (DEVMODE);
-    dmScreenSettings.dmPelsWidth		= WIDTH;
-    dmScreenSettings.dmPelsHeight		= HEIGHT;
-    dmScreenSettings.dmBitsPerPel		= BITSPERPIXEL;
-    dmScreenSettings.dmFields			= DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
-    if (ChangeDisplaySettings (&dmScreenSettings, CDS_FULLSCREEN) != DISP_CHANGE_SUCCESSFUL) {
-        MessageBox(nullptr, "FullScreen mode not available", WINDOW_TITLE, MB_OK);
+    DEVMODE previous_mode{};
+
+    bool fullscreen = false;
+
+    if constexpr (FULLSCREEN) {
+        previous_mode.dmSize = sizeof(previous_mode);
+        previous_mode.dmBitsPerPel = GetDeviceCaps(l_hDC, BITSPIXEL);
+        previous_mode.dmPelsWidth = GetDeviceCaps(l_hDC, HORZRES);
+        previous_mode.dmPelsHeight = GetDeviceCaps(l_hDC, VERTRES);
+        previous_mode.dmDisplayFrequency = GetDeviceCaps(l_hDC, VREFRESH);
+        previous_mode.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFREQUENCY;
+
+        int num = 0;
+        int selected_num = -1;
+        DEVMODE dmScreenSettings;
+        size_t selected_bits = 0;
+        while (EnumDisplaySettings(nullptr, num, &dmScreenSettings)) {
+            size_t current_bits = dmScreenSettings.dmBitsPerPel * dmScreenSettings.dmPelsHeight * dmScreenSettings.dmPelsWidth;
+            if (selected_bits < current_bits) {
+                WIDTH = dmScreenSettings.dmPelsWidth;
+                HEIGHT = dmScreenSettings.dmPelsHeight;
+                BITSPERPIXEL = dmScreenSettings.dmBitsPerPel;
+                selected_num = num;
+            }
+            ++num;
+        }
+
+        EnumDisplaySettings(nullptr, selected_num, &dmScreenSettings);
+        fullscreen = ChangeDisplaySettings(&dmScreenSettings, CDS_FULLSCREEN) == DISP_CHANGE_SUCCESSFUL;
+        if (fullscreen) {
+            ShowCursor(false);
+            windowStyle = WS_POPUP;
+            windowExtendedStyle = WS_EX_APPWINDOW | WS_EX_TOPMOST;
+        }
+    } 
+    if (!fullscreen) {
         windowStyle = WS_OVERLAPPEDWINDOW;
         windowExtendedStyle = WS_EX_APPWINDOW;
-        AdjustWindowRectEx (&windowRect, windowStyle, 0, windowExtendedStyle);
-    } else {
-        ShowCursor(false);
-        windowStyle = WS_POPUP;
-        windowExtendedStyle = WS_EX_APPWINDOW | WS_EX_TOPMOST;
+        RECT windowRect = { 0, 0, WIDTH, HEIGHT };
+        AdjustWindowRectEx(&windowRect, windowStyle, 0, windowExtendedStyle);
     }
-#else
-    windowStyle = WS_OVERLAPPEDWINDOW;
-    windowExtendedStyle = WS_EX_APPWINDOW;
-    AdjustWindowRectEx(&windowRect, windowStyle, 0, windowExtendedStyle);
-#endif
-    if (hWND = CreateWindowEx (windowExtendedStyle, WINDOW_CLASS_NAME, WINDOW_TITLE, windowStyle, 0, 0, windowRect.right - windowRect.left, windowRect.bottom - windowRect.top, HWND_DESKTOP, nullptr, hinstance, nullptr)) { // so i can say that this one is not that long
-  	    hDC = GetDC(hWND);
-  	    iPixelFormat = ChoosePixelFormat(hDC, &pfd);
-  	    SetPixelFormat(hDC, iPixelFormat, &pfd); 
+    if (hWND = CreateWindowEx (windowExtendedStyle, WINDOW_CLASS_NAME, WINDOW_TITLE, windowStyle, 0, 0, WIDTH, HEIGHT, HWND_DESKTOP, nullptr, hinstance, nullptr)) { // so i can say that this one is not that long
+        hDC = GetDC(hWND);
+        PIXELFORMATDESCRIPTOR pfd = { sizeof(PIXELFORMATDESCRIPTOR), 1, PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER, PFD_TYPE_RGBA, BITSPERPIXEL, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 16, 1, 0, PFD_MAIN_PLANE, 0, 0, 0, 0 }; // but his is even longer....
+        iPixelFormat = ChoosePixelFormat(hDC, &pfd);
+        SetPixelFormat(hDC, iPixelFormat, &pfd); 
         if (hRC = wglCreateContext(hDC)) {
             wglMakeCurrent(hDC, hRC);
         }
@@ -1139,21 +1140,21 @@ int WINAPI WinMain(HINSTANCE hinstance,HINSTANCE hprevinstance,LPSTR lpcmdline,i
         bool once = true;
         panInitTimer();
         while (true) {
-  	        MSG msg;
-  	        if (PeekMessage(&msg, nullptr,0,0,PM_REMOVE)) { 
+            MSG msg;
+            if (PeekMessage(&msg, nullptr,0,0,PM_REMOVE)) { 
                 if (msg.message == WM_QUIT) {
                     break;
                 }
-  	            TranslateMessage(&msg);
-  	            DispatchMessage(&msg);
-  	        } else {
-  	            if (once) {
+                TranslateMessage(&msg);
+                DispatchMessage(&msg);
+            } else {
+                if (once) {
                     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
                     glClearDepth(1);
                     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
                     skSwapBuffers();
                     ShowWindow(hWND, SW_SHOW);
-                    if (panGetTime() > 0.5) {
+                    if (panGetTime() > 0.5f) {
                         if (music = (FSOUND_Init(SAMPLERATE, 0) && (fmodule = FMUSIC_LoadSong(MAKEINTRESOURCE(IDR_RC_RTDATA1), nullptr)))) {
                             FMUSIC_PlaySong(fmodule);
                         }
@@ -1164,25 +1165,18 @@ int WINAPI WinMain(HINSTANCE hinstance,HINSTANCE hprevinstance,LPSTR lpcmdline,i
                     skDraw();
                 }
             }
-  	    }
+        }
         if (music) {
-  	        FMUSIC_FreeSong(fmodule);
-  	        FSOUND_Close();
+            FMUSIC_FreeSong(fmodule);
+            FSOUND_Close();
         }
     } else {
         MessageBox(GetDesktopWindow(), "Can't create window", "SKerror", MB_OK);
     }
-#ifdef FULLSCREEN
-    static DEVMODE mode;
-    mode.dmSize=sizeof(mode);
-    mode.dmBitsPerPel=oldbpp;
-    mode.dmPelsWidth=oldwidth;
-    mode.dmPelsHeight=oldheight;
-    mode.dmDisplayFrequency = oldfreq;
-    mode.dmFields = DM_BITSPERPEL|DM_PELSWIDTH|DM_PELSHEIGHT|DM_DISPLAYFREQUENCY;
-    ChangeDisplaySettings(&mode, 0);
-    ShowCursor(true);
-#endif
+    if (fullscreen) {
+        ChangeDisplaySettings(&previous_mode, 0);
+        ShowCursor(true);
+    }
     ExitProcess(0);
     return 0;
 }

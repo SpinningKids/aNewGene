@@ -6,11 +6,6 @@
 
 struct Particles;
 
-struct Field {
-    virtual Vector3 operator () (Particles &p, int num) = 0;
-    virtual ~Field() = default;
-};
-
 //typedef Vector3 Field(Particles &, int);
 //Vector3 NullField(Particles &p, int num);
 
@@ -22,6 +17,11 @@ struct ParticleInfo {
   float r, g, b, a;
   double timestamp;
 //  bool active;
+};
+
+struct Field {
+    virtual Vector3 operator () (const ParticleInfo& p) const = 0;
+    virtual ~Field() = default;
 };
 
 struct Particles {
@@ -40,10 +40,10 @@ struct Particles {
   float getFriction() const { return friction; }
 
   void setForceField(Field *f) { force = f; }
-  Field *getForceField() { return force; }
+  Field *getForceField() const { return force; }
 
   void setWind(Field *f) { wind = f; }
-  Field *getWind() { return wind; }
+  Field *getWind() const { return wind; }
 
   void move(float dt);
 
