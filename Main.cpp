@@ -1106,11 +1106,11 @@ int WINAPI WinMain(HINSTANCE hinstance,HINSTANCE hprevinstance,LPSTR lpcmdline,i
         DEVMODE dmScreenSettings;
         size_t selected_bits = 0;
         while (EnumDisplaySettings(nullptr, num, &dmScreenSettings)) {
-            size_t current_bits = dmScreenSettings.dmBitsPerPel * dmScreenSettings.dmPelsHeight * dmScreenSettings.dmPelsWidth;
-            if (selected_bits < current_bits) {
+            if (size_t current_bits = dmScreenSettings.dmBitsPerPel * dmScreenSettings.dmPelsHeight * dmScreenSettings.dmPelsWidth; selected_bits < current_bits) {
                 WIDTH = dmScreenSettings.dmPelsWidth;
                 HEIGHT = dmScreenSettings.dmPelsHeight;
                 BITSPERPIXEL = dmScreenSettings.dmBitsPerPel;
+                selected_bits = current_bits;
                 selected_num = num;
             }
             ++num;
