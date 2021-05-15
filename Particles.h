@@ -34,7 +34,6 @@ struct Particles {
 
   Particles(int _num);
   void add(const Vector3 &p, const Vector3 &v, float s, float m, float r, float g, float b, float a, double timestamp);
-  void remove(int n);
 
   void setFriction(float f) { friction = f; }
   float getFriction() const { return friction; }

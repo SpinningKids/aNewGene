@@ -23,12 +23,6 @@ void Particles::add(const Vector3 &p, const Vector3 &v, float s, float m, float 
   num++;
 }
 
-void Particles::remove(int n) {
-  for(int i = n+1; i < num; i++)
-    parts[i-1] = parts[i];
-  num--;
-} 
-
 void Particles::move(float dt) {
     for (ParticleInfo* p = parts; p != parts + num; ++p) {
         Vector3 a(0, 0, 0);

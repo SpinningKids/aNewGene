@@ -443,13 +443,17 @@ void drawSmoke2(float t, int v) {
         fumo2->move(dt);
         fiori1->move(dt);
     }
-  
-    for(int i = 0; i < fumo2->num; i++) {
-        if (fumo2->parts[i].position.z > 900) {
-            fumo2->remove(i);
-            i--;
+
+    int j = 0;
+    for(int i = 0; i < fumo2->num; ++i) {
+        if (fumo2->parts[i].position.z <= 900) {
+            if (i != j) {
+                fumo2->parts[j] = fumo2->parts[i];
+            }
+            ++j;
         }
     }
+    fumo2->num = j;
 /*      
     for(i = 0; i < fiori1->num; i++) {
 //        if (fiori1->parts[i].position.z > 750) 
