@@ -18,12 +18,9 @@ GLTexture* perlin(int logsize, float freq, float amp, float base, float k, bool 
         fillsize >>= 1;
     }
     float m = freq / fillsize;
-    float ncoord[3];
     for (int i = 0; i < fillsize; i++) {
-        ncoord[0] = m * i;
         for (int j = 0; j < fillsize; j++) {
-            ncoord[1] = m * j;
-            float col = vnoise(2, ncoord) * amp + base;
+            float col = vnoise(m * i, m * j) * amp + base;
             col = (col < 0) ? 0 : (col > 1) ? 1 : col;
             tex[(((i << logsize) + j) << 2) + 0] = powf(col, 1.f / k);
             tex[(((i << logsize) + j) << 2) + 1] = col;
@@ -117,4 +114,3 @@ GLTexture *circle2(int logsize) {
   prln->update();
   return prln;
 }
-

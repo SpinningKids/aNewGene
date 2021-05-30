@@ -3,7 +3,7 @@
 // Used by Resource.rc
 //
 #define IDR_RCDATA1                     102
-#define IDR_RC_RTDATA1                  103
+#define IDR_RC_MUSIC                    103
 #define IDB_GCBITMAP                    104
 #define IDI_ICON1                       105
 

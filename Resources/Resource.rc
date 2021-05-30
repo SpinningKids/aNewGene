@@ -52,7 +52,7 @@ END
 // RC_RTDATA
 //
 
-IDR_RC_RTDATA1          RC_RTDATA DISCARDABLE   "DUNESHI2.XM"
+IDR_RC_MUSIC            RC_RTDATA DISCARDABLE   "DUNESHI2.XM"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -68,7 +68,7 @@ IDB_GCBITMAP            BITMAP  DISCARDABLE     "gcbitmap.bmp"
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDI_ICON1               ICON    DISCARDABLE     "SK.ICO"
+IDI_SPINNINGKID         ICON    DISCARDABLE     "SK.ICO"
 #endif    // English (U.S.) resources
 /////////////////////////////////////////////////////////////////////////////
 

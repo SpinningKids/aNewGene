@@ -11,32 +11,23 @@
 
 #define WIN32_LEAN_AND_MEAN
 
-constexpr char WINDOW_CLASS_NAME[] = "SKCLASS";
-constexpr char WINDOW_TITLE[] = "aNewGene";
-
 #include <Windows.h>
-#include <mmsystem.h>
 #include <gl/GLU.h>
 
+#include "Resources/resource.h"
+
+#include "Globals.h"
 #include "GenTex.h"
 #include "noise.h"
-#include "minifmod/minifmod.h"
-#include "resource.h"
 #include "Particles.h"
+#include "utils.h"
 
-int WIDTH = 640;
-int HEIGHT = 480;
-int BITSPERPIXEL = 32;
-constexpr bool FULLSCREEN = true;
-constexpr int ORIGINAL_WIDTH = 640;
-constexpr int ORIGINAL_HEIGHT = 480;
-
-constexpr int SAMPLERATE = 96000;
 bool greets = false;
 
 //globals
-
-HINSTANCE g_hinstance;
+/*##########################################################*/
+/*Standard Var definitions :								*/
+/*##########################################################*/
 
 Particles *fumo1;
 Particles *fumo2;
@@ -52,204 +43,6 @@ float landscape[100][100];
 GLint mylist;
 GLint mylandscape;
 GLint mylandscape2;
-
-// Music Related
-
-bool music = false;
-FMUSIC_MODULE *fmodule;
-
-typedef struct {
-    int length;
-    int pos;
-    void *data;
-} MEMFILE;
-
-unsigned int memopen(char *name) {
-    HRSRC rec = FindResourceEx(GetModuleHandle(nullptr), "RC_RTDATA", name, 0);
-    if (rec) {
-        HGLOBAL handle = LoadResource(nullptr, rec);
-        MEMFILE* memfile = new MEMFILE{
-            (int)SizeofResource(nullptr, rec),
-            0,
-            LockResource(handle),
-        };
-        return (unsigned int)memfile;
-    }
-    return -1;
-}
-
-void memclose(unsigned int handle) {
-    MEMFILE *memfile = (MEMFILE *)handle;
-    if (memfile) {
-        UnlockResource((HGLOBAL)(memfile->data));
-    }
-    delete memfile;
-}
-
-int memread(void *buffer, int size, unsigned int handle) {
-    MEMFILE *memfile = (MEMFILE *)handle;
-
-    if (memfile->pos + size >= memfile->length) {
-        size = memfile->length - memfile->pos;
-    }
-    memcpy(buffer, (char *)memfile->data+memfile->pos, size);
-    memfile->pos += size;
-    
-    return size;
-}
-
-void memseek(unsigned int handle, int pos, signed char mode) {
-    MEMFILE *memfile = (MEMFILE *)handle;
-
-    if (mode == SEEK_SET) {
-        memfile->pos = pos;
-    } else if (mode == SEEK_CUR) {
-        memfile->pos += pos;
-    } else if (mode == SEEK_END) {
-        memfile->pos = memfile->length + pos;
-    }
-    if (memfile->pos > memfile->length) {
-        memfile->pos = memfile->length;
-    }
-}
-
-int memtell(unsigned int handle) {
-    MEMFILE *memfile = (MEMFILE *)handle;
-    return memfile->pos;
-}
-
-// Base GL Related
-
-HWND		hWND;
-HDC			hDC;
-HGLRC		hRC;
-
-static void panViewOrthoModified() {
-    glViewport(0,0,WIDTH,HEIGHT);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    int w = ORIGINAL_HEIGHT * WIDTH / HEIGHT;
-    if (w >= ORIGINAL_WIDTH) {
-        int margin = (w - ORIGINAL_WIDTH) / 2;
-        glOrtho(-margin, ORIGINAL_WIDTH + margin, ORIGINAL_HEIGHT, 0, -1, 1);
-    } else {
-        int h = ORIGINAL_WIDTH * HEIGHT / WIDTH;
-        int margin = (h - ORIGINAL_HEIGHT) / 2;
-        glOrtho(0, WIDTH, ORIGINAL_HEIGHT + margin, -margin, -1, 1);
-    }
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-}
-
-static void panViewOrtho() {
-    glViewport(0, 0, WIDTH, HEIGHT);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(0, WIDTH, HEIGHT, 0, -1, 1);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-}
-
-void panViewPerspectiveFOV(float fov) {
-    glViewport(0,0,WIDTH,HEIGHT);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluPerspective(fov,((float)WIDTH)/HEIGHT,0.1f,600.0f);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-}
-
-static void skSwapBuffers() {
-    glFinish();
-    glFlush();
-    SwapBuffers(hDC);
-}
-
-// textureload
-
-GLTexture *loadTexture(int resid, int logsize) {
-    static HDC displaydc = CreateDC("DISPLAY", nullptr, nullptr, nullptr);
-    GLTexture *ret = new GLTexture(logsize);
-    int txsize = ret->getSize();
-    HBITMAP h = (HBITMAP)LoadImage(g_hinstance, (const char *)resid, IMAGE_BITMAP, txsize, txsize, LR_CREATEDIBSECTION);
-    DIBSECTION ds;
-    GetObject(h, sizeof(ds), &ds);
-    BITMAPINFOHEADER a = {
-        sizeof(BITMAPINFOHEADER),
-        txsize,
-        -txsize,
-        1,
-        32,
-        BI_RGB,
-        (DWORD)(4*txsize*txsize),
-        0,
-        0,
-        0,
-        0
-    };
-    unsigned char *texture = new unsigned char[a.biSizeImage];
-    GetDIBits(displaydc, h, 0, txsize, texture, (BITMAPINFO *)&a, DIB_RGB_COLORS);
-    GLfloat *tex = ret->getImage();
-    const float un255 = 1.0f/255.0f;
-    int topsize = txsize * 3 / 4;
-    for (int i = 0; i < txsize * topsize; i++) {
-        tex[i * 4] = tex[i * 4 + 1] = tex[i * 4 + 2] = texture[i * 4] * un255;
-        tex[i * 4 + 3] = 1.0f;
-    }
-    for (int i = txsize * topsize; i < txsize * txsize; i++) {
-        tex[i * 4] = tex[i * 4 + 1] = tex[i * 4 + 2] = 1.0f;
-        tex[i * 4 + 3] = 1.0f - texture[i * 4] * un255;
-    }
-    ret->update();
-    delete[] texture;
-    DeleteObject(h);
-    return ret;
-}
-
-// timing
-
-static __int64 timerstart;
-static __int64 timerfrq;
-
-extern "C" {
-    HWAVEOUT FSOUND_WaveOutHandle;
-}
-
-static void panInitTimer() {
-    QueryPerformanceCounter((LARGE_INTEGER *)&timerstart);
-    QueryPerformanceFrequency((LARGE_INTEGER *)&timerfrq);
-}
-
-static float panGetTime() {
-    if (music)
-    {
-        MMTIME mmtime;
-        mmtime.wType = TIME_SAMPLES;
-        waveOutGetPosition(FSOUND_WaveOutHandle, &mmtime, sizeof(mmtime));
-        return mmtime.u.ticks/(float)SAMPLERATE;
-    } else {
-        __int64 a;
-        QueryPerformanceCounter((LARGE_INTEGER *)&a);
-        return (a - timerstart)/(float)(timerfrq);
-    }
-}
-
-// windows
-
-static LRESULT CALLBACK skWinProc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp) {
-    switch (msg) {
-    case WM_KEYDOWN:
-        if ((int)wp != VK_ESCAPE)
-            break;
-    case WM_CLOSE:
-    case WM_DESTROY:
-        PostQuitMessage(0);
-        return 0;
-    case WM_ERASEBKGND:
-        return 1;
-    }
-    return DefWindowProc(wnd, msg, wp, lp);
-} 
 
 // Particles Stuff
 
@@ -834,9 +627,9 @@ void drawFlashBianco(float aperture) {
 
 // mainloop
 
-static void skDraw() {
+void skDraw() {
 
-    float t = static_cast<float>(panGetTime());
+    float t = skGetTime();
     if (t>136) {
       PostQuitMessage(0);
       return;
@@ -962,12 +755,11 @@ static void skDraw() {
     // fumo con pallini che compaiono a tempo
     // scena ripieno
     // albero, erba, pallini, a svanire.
-    skSwapBuffers();
 }
 
 void skInitDemoStuff()
 {
-    greetscreds = loadTexture(IDB_GCBITMAP, 8);
+    greetscreds = skLoadTexture(IDB_GCBITMAP, 8);
     
     mylist = glGenLists(8);
     mylandscape = glGenLists(1);
@@ -1074,113 +866,7 @@ void skInitDemoStuff()
     
 }
 
-int WINAPI WinMain(HINSTANCE hinstance,HINSTANCE hprevinstance,LPSTR lpcmdline,int ncmdshow) {
-    if (_stricmp(lpcmdline, "/g") == 0) {
-        greets = true;
-    }
-    g_hinstance = hinstance;
-    WNDCLASSEX winclass = {sizeof(WNDCLASSEX), CS_HREDRAW | CS_VREDRAW | CS_OWNDC, (WNDPROC)(skWinProc), 0, 0, nullptr, nullptr, LoadCursor(nullptr, IDC_ARROW), (HBRUSH)(COLOR_APPWORKSPACE), nullptr, WINDOW_CLASS_NAME, nullptr}; // this is long
-    winclass.hInstance		= hinstance;
-    HDC				l_hDC;
-    l_hDC=GetDC(GetDesktopWindow());
-    if (!RegisterClassEx(&winclass)) {
-        return 0;
-    }
-    unsigned int  iPixelFormat; 
-    DWORD windowStyle, windowExtendedStyle;
-
-    DEVMODE previous_mode{};
-
-    bool fullscreen = false;
-
-    if constexpr (FULLSCREEN) {
-        previous_mode.dmSize = sizeof(previous_mode);
-        previous_mode.dmBitsPerPel = GetDeviceCaps(l_hDC, BITSPIXEL);
-        previous_mode.dmPelsWidth = GetDeviceCaps(l_hDC, HORZRES);
-        previous_mode.dmPelsHeight = GetDeviceCaps(l_hDC, VERTRES);
-        previous_mode.dmDisplayFrequency = GetDeviceCaps(l_hDC, VREFRESH);
-        previous_mode.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFREQUENCY;
-
-        int num = 0;
-        int selected_num = -1;
-        DEVMODE dmScreenSettings;
-        size_t selected_bits = 0;
-        while (EnumDisplaySettings(nullptr, num, &dmScreenSettings)) {
-            if (size_t current_bits = dmScreenSettings.dmBitsPerPel * dmScreenSettings.dmPelsHeight * dmScreenSettings.dmPelsWidth; selected_bits < current_bits) {
-                WIDTH = dmScreenSettings.dmPelsWidth;
-                HEIGHT = dmScreenSettings.dmPelsHeight;
-                BITSPERPIXEL = dmScreenSettings.dmBitsPerPel;
-                selected_bits = current_bits;
-                selected_num = num;
-            }
-            ++num;
-        }
-
-        EnumDisplaySettings(nullptr, selected_num, &dmScreenSettings);
-        fullscreen = ChangeDisplaySettings(&dmScreenSettings, CDS_FULLSCREEN) == DISP_CHANGE_SUCCESSFUL;
-        if (fullscreen) {
-            ShowCursor(false);
-            windowStyle = WS_POPUP;
-            windowExtendedStyle = WS_EX_APPWINDOW | WS_EX_TOPMOST;
-        }
-    } 
-    if (!fullscreen) {
-        windowStyle = WS_OVERLAPPEDWINDOW;
-        windowExtendedStyle = WS_EX_APPWINDOW;
-        RECT windowRect = { 0, 0, WIDTH, HEIGHT };
-        AdjustWindowRectEx(&windowRect, windowStyle, 0, windowExtendedStyle);
-    }
-    if (hWND = CreateWindowEx (windowExtendedStyle, WINDOW_CLASS_NAME, WINDOW_TITLE, windowStyle, 0, 0, WIDTH, HEIGHT, HWND_DESKTOP, nullptr, hinstance, nullptr)) { // so i can say that this one is not that long
-        hDC = GetDC(hWND);
-        PIXELFORMATDESCRIPTOR pfd = { sizeof(PIXELFORMATDESCRIPTOR), 1, PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER, PFD_TYPE_RGBA, BITSPERPIXEL, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 16, 1, 0, PFD_MAIN_PLANE, 0, 0, 0, 0 }; // but his is even longer....
-        iPixelFormat = ChoosePixelFormat(hDC, &pfd);
-        SetPixelFormat(hDC, iPixelFormat, &pfd); 
-        if (hRC = wglCreateContext(hDC)) {
-            wglMakeCurrent(hDC, hRC);
-        }
-        ShowWindow(hWND, SW_HIDE);
-        skInitDemoStuff();
-        FSOUND_File_SetCallbacks(memopen, memclose, memread, memseek, memtell);
-        bool once = true;
-        panInitTimer();
-        while (true) {
-            MSG msg;
-            if (PeekMessage(&msg, nullptr,0,0,PM_REMOVE)) { 
-                if (msg.message == WM_QUIT) {
-                    break;
-                }
-                TranslateMessage(&msg);
-                DispatchMessage(&msg);
-            } else {
-                if (once) {
-                    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-                    glClearDepth(1);
-                    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-                    skSwapBuffers();
-                    ShowWindow(hWND, SW_SHOW);
-                    if (panGetTime() > 0.5f) {
-                        if (music = (FSOUND_Init(SAMPLERATE, 0) && (fmodule = FMUSIC_LoadSong(MAKEINTRESOURCE(IDR_RC_RTDATA1), nullptr)))) {
-                            FMUSIC_PlaySong(fmodule);
-                        }
-                        panInitTimer();
-                        once = false;
-                    }
-                } else {
-                    skDraw();
-                }
-            }
-        }
-        if (music) {
-            FMUSIC_FreeSong(fmodule);
-            FSOUND_Close();
-        }
-    } else {
-        MessageBox(GetDesktopWindow(), "Can't create window", "SKerror", MB_OK);
-    }
-    if (fullscreen) {
-        ChangeDisplaySettings(&previous_mode, 0);
-        ShowCursor(true);
-    }
-    ExitProcess(0);
-    return 0;
+void skUnloadDemoStuff()
+{
+    
 }

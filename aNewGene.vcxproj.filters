@@ -25,6 +25,7 @@
     <ClCompile Include="minifmod\system_file.c">
       <Filter>minifmod</Filter>
     </ClCompile>
+    <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GenTex.h" />
@@ -62,14 +63,11 @@
     <ClInclude Include="minifmod\xmeffects.h">
       <Filter>minifmod</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="gcbitmap.bmp">
+    <ClInclude Include="utils.h" />
+    <ClInclude Include="Globals.h" />
+    <ClInclude Include="Resources\resource.h">
       <Filter>Resources</Filter>
-    </Image>
-    <Image Include="SK.ICO">
-      <Filter>Resources</Filter>
-    </Image>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="minifmod">
@@ -80,12 +78,20 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="DUNESHI2.XM">
+    <None Include="Resources\DUNESHI2.XM">
       <Filter>Resources</Filter>
-    </CustomBuild>
+    </None>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="Resource.rc">
+    <Image Include="Resources\gcbitmap.bmp">
+      <Filter>Resources</Filter>
+    </Image>
+    <Image Include="Resources\SK.ICO">
+      <Filter>Resources</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resources\Resource.rc">
       <Filter>Resources</Filter>
     </ResourceCompile>
   </ItemGroup>

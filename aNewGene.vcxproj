@@ -117,9 +117,11 @@
     <ClCompile Include="minifmod\system_file.c" />
     <ClCompile Include="noise.cpp" />
     <ClCompile Include="Particles.cpp" />
+    <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GenTex.h" />
+    <ClInclude Include="Globals.h" />
     <ClInclude Include="GLTexture.h" />
     <ClInclude Include="Math3.h" />
     <ClInclude Include="minifmod\minifmod.h" />
@@ -134,16 +136,18 @@
     <ClInclude Include="minifmod\xmeffects.h" />
     <ClInclude Include="noise.h" />
     <ClInclude Include="Particles.h" />
+    <ClInclude Include="Resources\resource.h" />
+    <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="gcbitmap.bmp" />
-    <Image Include="SK.ICO" />
+    <None Include="Resources\DUNESHI2.XM" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="Resource.rc" />
+    <Image Include="Resources\gcbitmap.bmp" />
+    <Image Include="Resources\SK.ICO" />
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="DUNESHI2.XM" />
+    <ResourceCompile Include="Resources\Resource.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
