@@ -16,10 +16,8 @@ float skGetFPS();
 
 void panViewOrtho();
 void panViewOrthoModified();
-void panViewPerspective();
-void panViewPerspectiveFOV(float fov);
+void panViewPerspective(double fov, double znear, double zfar);
 void skStopMusic();
-bool skHiddenPart();
 void skQuitDemo();
 std::unique_ptr<GLTexture> skLoadTexture(int resid, int logsize);
 

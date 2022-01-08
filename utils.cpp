@@ -14,7 +14,6 @@
 #include "Globals.h"
 #include "minifmod/minifmod.h"
 
-
 constexpr int ORIGINAL_WIDTH = 640;
 constexpr int ORIGINAL_HEIGHT = 480;
 bool isMusicEnabled = false;
@@ -89,11 +88,9 @@ void memseek(unsigned int handle, int pos, signed char mode) {
 
     if (mode == SEEK_SET) {
         memfile->pos = pos;
-    }
-    else if (mode == SEEK_CUR) {
+    } else if (mode == SEEK_CUR) {
         memfile->pos += pos;
-    }
-    else if (mode == SEEK_END) {
+    } else if (mode == SEEK_END) {
         memfile->pos = memfile->length + pos;
     }
     if (memfile->pos > memfile->length) {
@@ -152,8 +149,7 @@ void panViewOrthoModified() {
     if (w >= ORIGINAL_WIDTH) {
         int margin = (w - ORIGINAL_WIDTH) / 2;
         glOrtho(-margin, ORIGINAL_WIDTH + margin, ORIGINAL_HEIGHT, 0, -1, 1);
-    }
-    else {
+    } else {
         int h = ORIGINAL_WIDTH * HEIGHT / WIDTH;
         int margin = (h - ORIGINAL_HEIGHT) / 2;
         glOrtho(0, WIDTH, ORIGINAL_HEIGHT + margin, -margin, -1, 1);
@@ -162,32 +158,15 @@ void panViewOrthoModified() {
     glLoadIdentity();
 }
 
-void panViewOrthoWidthHeight(int pwidth, int pheight) {
-    glViewport(0, 0, pwidth, pheight);
+void panViewPerspective(double fov, double znear, double zfar) {
+    glViewport(0, 0, WIDTH, HEIGHT);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(0, pwidth, pheight, 0, -1, 1);
+    gluPerspective(fov, (double)WIDTH / HEIGHT, znear, zfar);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 }
 
-void panViewPerspective() {
-    glViewport(0, 0, WIDTH, HEIGHT);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluPerspective(45.0, (double)WIDTH / HEIGHT, 0.1, 600.0);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-}
-
-void panViewPerspectiveFOV(float fov) {
-    glViewport(0, 0, WIDTH, HEIGHT);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluPerspective((double)fov, (double)WIDTH / HEIGHT, 0.1, 600.0);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-}
 
 /* Timing vars */
 static float      timer_time;
@@ -305,7 +284,7 @@ bool skHiddenPart() {
     return hiddenpart;
 }
 
-#ifdef __LINUX__
+#ifndef WIN32
 /*
  * Switches:
  *
@@ -317,41 +296,41 @@ int flag_w = 0;
 int flag_hidden = 0;
 int flag_d_value = 0;
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
     int c;
 
     while ((c = getopt(argc, argv, "?PKgwd:")) != -1) {
         switch (c) {
-            case 'P':
-                flag_hidden = 1;
-                break;
-            case 'K':
-                if (flag_hidden) flag_hidden = 2;
-                break;
-            case 'g':
-                flag_hidden = 2;
-                break;
-            case 'w':
-                flag_w = 1;
-                break;
-            case 'd':
-                {
-                    char* tail;
-                    if (optarg != nullptr) flag_d_value = strtol(optarg, &tail, 0);
-                    if (optarg == nullptr || tail == optarg || *tail != '\0') {
-                        fprintf(stderr, "Invalid display depth (bits per pixel)\n");
-                        exit(1);
-                    }
-                }
-                break;
-            case '?':
-            default:
-                fprintf(stderr,
-                    "\n%s\n"
-                    "  -w        force windowed mode\n"
-                    "  -d bpp    set display depth (defaults to let SDL decide)\n\n", argv[0]);
-                exit(0);
-                break;
+        case 'P':
+            flag_hidden = 1;
+            break;
+        case 'K':
+            if (flag_hidden) flag_hidden = 2;
+            break;
+        case 'g':
+            flag_hidden = 2;
+            break;
+        case 'w':
+            flag_w = 1;
+            break;
+        case 'd':
+        {
+            char* tail;
+            if (optarg != nullptr) flag_d_value = strtol(optarg, &tail, 0);
+            if (optarg == nullptr || tail == optarg || *tail != '\0') {
+                fprintf(stderr, "Invalid display depth (bits per pixel)\n");
+                exit(1);
+            }
+        }
+        break;
+        case '?':
+        default:
+            fprintf(stderr,
+                "\n%s\n"
+                "  -w        force windowed mode\n"
+                "  -d bpp    set display depth (defaults to let SDL decide)\n\n", argv[0]);
+            exit(0);
+            break;
         }
     }
 
@@ -359,7 +338,7 @@ int main(int argc, char *argv[]) {
     if (flag_hidden) hiddenpart = true; else hiddenpart = false;
 
 
-    if ( SDL_Init(SDL_INIT_VIDEO) < 0 ) {
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         fprintf(stderr, "Couldn't init SDL: %s\n", SDL_GetError());
         exit(1);
     }
@@ -374,9 +353,43 @@ int main(int argc, char *argv[]) {
     SDL_ShowCursor(0);
 
     done = 0;
-#endif /* __LINUX__ */
+    FSOUND_File_SetCallbacks(memopen, memclose, memread, memseek, memtell);
+    if (FSOUND_Init(SAMPLERATE, 0))
+    {
+        fmodule = FMUSIC_LoadSong("cippa", nullptr);
+        isMusicEnabled = (fmodule != nullptr);
+    }
 
-#ifdef WIN32
+    skInitDemoStuff();
+    if (isMusicEnabled)
+        FMUSIC_PlaySong(fmodule);
+    skInitTimer();
+    while (!done) {
+        skDraw();
+        skSwapBuffers();
+        skTimerFrame();
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                done = 1;
+            }
+            if (event.type == SDL_KEYDOWN) {
+                if (event.key.keysym.sym == SDLK_ESCAPE ||
+                    event.key.keysym.sym == SDLK_SPACE ||
+                    event.key.keysym.sym == 65 ||
+                    event.key.keysym.sym == 9) { // strange things happen...
+                    done = 1;
+                }
+            }
+        }
+    }
+    if (isMusicEnabled) {
+        FMUSIC_FreeSong(fmodule);
+        FSOUND_Close();
+    }
+    SDL_Quit();
+}
+#else
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hprevinstance, LPSTR lpcmdline, int ncmdshow) {
     hiddenpart = (strcmp(lpcmdline, "/PK") == 0) || (_stricmp(lpcmdline, "/g") == 0);
     g_hinstance = hinstance;
@@ -400,7 +413,6 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hprevinstance, LPSTR lpcmdline
     if (!RegisterClassEx(&winclass)) {
         return 0;
     }
-    unsigned int iPixelFormat;
     DWORD windowStyle, windowExtendedStyle;
 
     DEVMODE previous_mode{};
@@ -444,50 +456,33 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hprevinstance, LPSTR lpcmdline
         RECT windowRect = { 0, 0, WIDTH, HEIGHT };
         AdjustWindowRectEx(&windowRect, windowStyle, 0, windowExtendedStyle);
     }
-    HWND hWND = CreateWindowEx(windowExtendedStyle, WINDOW_CLASS_NAME, WINDOW_TITLE, windowStyle, 0, 0, WIDTH, HEIGHT, HWND_DESKTOP, nullptr, hinstance, nullptr);
-    if (hWND) {
+    if (HWND hWND = CreateWindowEx(windowExtendedStyle, WINDOW_CLASS_NAME, WINDOW_TITLE, windowStyle, 0, 0, WIDTH, HEIGHT, HWND_DESKTOP, nullptr, hinstance, nullptr)) {
         hDC = GetDC(hWND);
         PIXELFORMATDESCRIPTOR pfd = { sizeof(PIXELFORMATDESCRIPTOR), 1, PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER, PFD_TYPE_RGBA, BITSPERPIXEL, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 16, 1, 0, PFD_MAIN_PLANE, 0, 0, 0, 0 }; // but his is even longer....
-        iPixelFormat = ChoosePixelFormat(hDC, &pfd);
+        unsigned int iPixelFormat = ChoosePixelFormat(hDC, &pfd);
 
         // make that match the device context's current pixel format
         SetPixelFormat(hDC, iPixelFormat, &pfd);
 
         // if we can create a rendering context ...
-        HGLRC hRC = wglCreateContext(hDC);
-        if (hRC) {
+        if (HGLRC hRC = wglCreateContext(hDC)) {
             // try to make it the thread's current rendering context
             wglMakeCurrent(hDC, hRC);
         }
 
         ShowWindow(hWND, SW_NORMAL);								// Make The Window Visible
-#endif /* WIN32 */
-
         FSOUND_File_SetCallbacks(memopen, memclose, memread, memseek, memtell);
-        if (FSOUND_Init(SAMPLERATE, 0))
-        {
-#ifdef WIN32
+        if (FSOUND_Init(SAMPLERATE, 0)) {
             fmodule = FMUSIC_LoadSong(MAKEINTRESOURCE(IDR_RC_MUSIC), nullptr);
-#else
-            fmodule = FMUSIC_LoadSong("cippa", nullptr);
-#endif
-            isMusicEnabled = true;
+            isMusicEnabled = (fmodule != nullptr);
         }
-
-        if (!fmodule)
-        {
-            //why quit if no audio available ??  (rIO)
-            //PostQuitMessage(0); //g_isMusicEnabled = false;
-            isMusicEnabled = false;
-        }
-
 
         skInitDemoStuff();
-        if (isMusicEnabled)
+        if (isMusicEnabled) {
             FMUSIC_PlaySong(fmodule);
+        }
         skInitTimer();
 
-#ifdef WIN32
         while (true) {
             MSG msg;
             if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
@@ -502,55 +497,25 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hprevinstance, LPSTR lpcmdline
                 skTimerFrame();
             }
         }
-#else
-        while (!done) {
-            skDraw();
-            skSwapBuffers();
-            skTimerFrame();
-            SDL_Event event;
-            while (SDL_PollEvent(&event)) {
-                if (event.type == SDL_QUIT) {
-                    done = 1;
-                }
-                if (event.type == SDL_KEYDOWN) {
-                    if (event.key.keysym.sym == SDLK_ESCAPE ||
-                        event.key.keysym.sym == SDLK_SPACE ||
-                        event.key.keysym.sym == 65 ||
-                        event.key.keysym.sym == 9) { // strange things happen...
-                        done = 1;
-                    }
-                }
-            }
-        }
-#endif
-
         if (isMusicEnabled) {
             FMUSIC_FreeSong(fmodule);
             FSOUND_Close();
         }
-
-#ifdef WIN32
     } else {
         MessageBox(GetDesktopWindow(), "Can't create window", "SKerror", MB_OK);
-#endif /* WIN32 */
     }
 
-#ifdef WIN32
     if (fullscreen) {
         ChangeDisplaySettings(&previous_mode, 0);
         ShowCursor(true);
     }
-#endif /* WIN32 */
 
     skUnloadDemoStuff();
 
-#ifdef WIN32
     ExitProcess(0);
-#else
-    SDL_Quit();
-#endif
     return 0;
 }
+#endif
 
 void skQuitDemo() {
 #ifdef WIN32
