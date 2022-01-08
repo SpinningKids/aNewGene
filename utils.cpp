@@ -20,6 +20,7 @@ constexpr int ORIGINAL_HEIGHT = 480;
 bool isMusicEnabled = false;
 bool hiddenpart = false;
 
+using namespace std;
 
 #ifdef WIN32
 HDC hDC;
@@ -261,9 +262,9 @@ void skStopMusic() {
 
 // textureload
 
-GLTexture* skLoadTexture(int resid, int logsize) {
+unique_ptr<GLTexture> skLoadTexture(int resid, int logsize) {
     static HDC displaydc = CreateDC("DISPLAY", nullptr, nullptr, nullptr);
-    GLTexture* ret = new GLTexture(logsize);
+    auto ret = make_unique<GLTexture>(logsize);
     int txsize = ret->getSize();
     HBITMAP h = (HBITMAP)LoadImage(g_hinstance, (const char*)resid, IMAGE_BITMAP, txsize, txsize, LR_CREATEDIBSECTION);
     DIBSECTION ds;
@@ -356,7 +357,7 @@ int main(int argc, char *argv[]) {
 
     if (flag_hidden != 2) flag_hidden = 0;
     if (flag_hidden) hiddenpart = true; else hiddenpart = false;
-    
+
 
     if ( SDL_Init(SDL_INIT_VIDEO) < 0 ) {
         fprintf(stderr, "Couldn't init SDL: %s\n", SDL_GetError());
@@ -449,13 +450,13 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hprevinstance, LPSTR lpcmdline
         PIXELFORMATDESCRIPTOR pfd = { sizeof(PIXELFORMATDESCRIPTOR), 1, PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER, PFD_TYPE_RGBA, BITSPERPIXEL, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 16, 1, 0, PFD_MAIN_PLANE, 0, 0, 0, 0 }; // but his is even longer....
         iPixelFormat = ChoosePixelFormat(hDC, &pfd);
 
-        // make that match the device context's current pixel format 
+        // make that match the device context's current pixel format
         SetPixelFormat(hDC, iPixelFormat, &pfd);
 
         // if we can create a rendering context ...
         HGLRC hRC = wglCreateContext(hDC);
         if (hRC) {
-            // try to make it the thread's current rendering context 
+            // try to make it the thread's current rendering context
             wglMakeCurrent(hDC, hRC);
         }
 

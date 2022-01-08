@@ -9,10 +9,10 @@
 #define GENTEX_H_
 
 #include "GLTexture.h"
+#include <memory>
 
-GLTexture* perlin(int logsize, float freq, float amp, float base, float k, bool wrap);
-GLTexture *circle(int logsize);
-GLTexture *circle2(int logsize);
-GLTexture *smoke(int logsize);
+std::unique_ptr<GLTexture> circle(int logsize);
+std::unique_ptr<GLTexture> circle2(int logsize);
+std::unique_ptr<GLTexture> smoke(int logsize);
 
 #endif // GENTEX_H_

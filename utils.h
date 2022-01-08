@@ -3,6 +3,8 @@
 
 #include "GLTexture.h"
 
+#include <memory>
+
 /* Timing Functions */
 void skInitTimer();
 float skGetTime();
@@ -19,7 +21,7 @@ void panViewPerspectiveFOV(float fov);
 void skStopMusic();
 bool skHiddenPart();
 void skQuitDemo();
-GLTexture* skLoadTexture(int resid, int logsize);
+std::unique_ptr<GLTexture> skLoadTexture(int resid, int logsize);
 
 extern void skDraw();
 extern void skInitDemoStuff();
