@@ -139,8 +139,6 @@ struct Vector3 {
   Vector3() {
   }
 
-  Vector3(Vector3 const &v) : x(v.x), y(v.y), z(v.z) {}
-
   Vector3(float ax, float ay, float az) : x(ax), y(ay), z(az) {}
 
   void normalize() {
@@ -148,13 +146,6 @@ struct Vector3 {
     x *= d;
     y *= d;
     z *= d;
-  }
-
-  Vector3 &operator = (Vector3 const &v) {
-    x = v.x;
-  	y = v.y;
-    z = v.z;
-    return(*this);
   }
 
   Vector3 &operator += (Vector3 const &v) {
