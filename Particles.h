@@ -3,6 +3,7 @@
 #define PARTICLES_H_
 
 #include "Math3.h"
+#include <vector>
 
 struct Particles;
 
@@ -25,14 +26,13 @@ struct Field {
 };
 
 struct Particles {
-  int maxnum, num;
-  ParticleInfo *parts;
+  std::vector<ParticleInfo> parts;
   Field *force;
   Field *wind;
 
   float friction;
 
-  Particles(int _num);
+  explicit Particles(int _num);
   void add(const Vector3 &p, const Vector3 &v, float s, float m, float r, float g, float b, float a, double timestamp);
 
   void setFriction(float f) { friction = f; }

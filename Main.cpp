@@ -23,6 +23,7 @@
 #include "utils.h"
 
 #include <memory>
+#include <numeric>
 
 using namespace std;
 
@@ -89,6 +90,13 @@ struct ZSpringField : Field {
 
 //effects
 
+static void glVertex3v3v(const Vector3& v) {
+    float tmp[3];
+    static_assert(sizeof(Vector3) == sizeof(tmp));
+    memcpy(tmp, &v, sizeof(tmp));
+    glVertex3fv(tmp);
+}
+
 static void algheTraICapelli(float t) {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -146,25 +154,26 @@ void drawParticles(Particles &ps, GLTexture *tex) {
     glDisable(GL_TEXTURE_GEN_T);
 
     glBegin(GL_QUADS);
-    for(int i = 0; i < ps.num ; i++) {
+    for(const auto &pi: ps.parts) {
 
-        const Vector3 &p = ps.parts[i].position;
+        const Vector3 &p = pi.position;
 
-        float s = ps.parts[i].size;
+        float s = pi.size;
 
-        glColor4f(ps.parts[i].r, ps.parts[i].g, ps.parts[i].b, ps.parts[i].a);
+        glColor4f(pi.r, pi.g, pi.b, pi.a);
 
-        const Vector3 sur = s*ur;
-        const Vector3 sul = s*ul;
+
+        const Vector3 sur = s * ur;
+        const Vector3 sul = s * ul;
 
         glTexCoord2f(0, 0);
-        glVertex3fv((float *)&(p-sur));
+        glVertex3v3v(p-sur);
         glTexCoord2f(1, 0);
-        glVertex3fv((float *)&(p-sul));
+        glVertex3v3v(p-sul);
         glTexCoord2f(1, 1);
-        glVertex3fv((float *)&(p+sur));
+        glVertex3v3v(p+sur);
         glTexCoord2f(0, 1);
-        glVertex3fv((float *)&(p+sul));
+        glVertex3v3v(p+sul);
     }
     glEnd();
     glDisable(GL_TEXTURE_2D);
@@ -178,25 +187,20 @@ void drawSmoke(float t) {
     if (dt != 0)
         fumo1->move(dt);
 
-    Vector3 centre(0,0,0);
-    for(int i = 0; i < fumo1->num; i++) {
-        centre += fumo1->parts[i].position;
-    }
-    if (fumo1->num > 0) {
-        centre /= (float)fumo1->num;
-    }
-    float fov = 90;
+
+    const Vector3 centre = std::accumulate(fumo1->parts.begin(), fumo1->parts.end(), Vector3{ 0, 0, 0 }, [](auto acc, auto& el) { return acc + el.position; }) / fumo1->parts.size();
+    constexpr double fov = 90;
     glViewport(0,0,WIDTH,HEIGHT);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(fov,((float)WIDTH)/HEIGHT,0.1f,2000.0f);
+    gluPerspective(fov,((double)WIDTH)/HEIGHT,0.1,2000.0);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(150, 300, 150, centre.x, centre.y, centre.z, 0, 1, 0);
 
     glEnable(GL_FOG);
     glFogi(GL_FOG_MODE, GL_LINEAR);
-    float a[3]= {1,1,1};
+    constexpr float a[3]{1,1,1};
     glFogfv(GL_FOG_COLOR, a);
     glFogf(GL_FOG_START, 300);
     glFogf(GL_FOG_END, 800);
@@ -241,16 +245,8 @@ void drawSmoke2(float t, int v) {
         fiori1->move(dt);
     }
 
-    int j = 0;
-    for(int i = 0; i < fumo2->num; ++i) {
-        if (fumo2->parts[i].position.z <= 900) {
-            if (i != j) {
-                fumo2->parts[j] = fumo2->parts[i];
-            }
-            ++j;
-        }
-    }
-    fumo2->num = j;
+    fumo2->parts.erase(remove_if(fumo2->parts.begin(), fumo2->parts.end(), [](auto& p) { return p.position.z > 900; }), fumo2->parts.end());
+
 /*
     for(i = 0; i < fiori1->num; i++) {
 //        if (fiori1->parts[i].position.z > 750)
@@ -356,8 +352,8 @@ static void elefantiTraICapelli3d(float t, int steps, float tphx, float tphz, in
 
         Vector3 delta = (thick/2*up.y)*rt-(thick/2*rt.y)*up;
 
-        glVertex3fv((float *)&(p+delta));
-        glVertex3fv((float *)&(p-delta));
+        glVertex3v3v(p+delta);
+        glVertex3v3v(p-delta);
 
         float cr = vlattice(1, i)*0.2f;
         float cg = vlattice(2, i)*0.2f;
@@ -435,8 +431,8 @@ static void elefantiTraICapelli3d(float t, int steps, float tphx, float tphz, in
 
 //            glColor4f(cr*0.1f+0.9f-j*0.001f, cg*0.1f+0.9f, cb*0.1f+0.7f, 0.0025*(j+10));
 
-            glVertex3fv((float *)&(p+delta));
-            glVertex3fv((float *)&(p-delta));
+            glVertex3v3v(p+delta);
+            glVertex3v3v(p-delta);
         }
         glEnd();
 
@@ -526,13 +522,13 @@ void scenaElefantiSferici(float t, int view) {
       sul *= size[i];
 
       glTexCoord2f(0, 0);
-      glVertex3fv((float *)&(pos[i]-sur));
+      glVertex3v3v(pos[i]-sur);
       glTexCoord2f(1, 0);
-      glVertex3fv((float *)&(pos[i]-sul));
+      glVertex3v3v(pos[i]-sul);
       glTexCoord2f(1, 1);
-      glVertex3fv((float *)&(pos[i]+sur));
+      glVertex3v3v(pos[i]+sur);
       glTexCoord2f(0, 1);
-      glVertex3fv((float *)&(pos[i]+sul));
+      glVertex3v3v(pos[i]+sul);
 
     }
 //    glEnable(GL_DEPTH_TEST);
@@ -564,19 +560,19 @@ void scenaElefanti(float t, int view, int view2) {
     if (!view2) {
         static bool once = true;
         if (once) {
-            for(int i = 0; i < fiori1->num; i++) {
-                fiori1->parts[i].r = fiori1->parts[i].r*0.5f+0.5f;
-                fiori1->parts[i].g = fiori1->parts[i].g*0.5f+0.5f;
-                fiori1->parts[i].b = fiori1->parts[i].b*0.5f+0.5f;
-                fiori1->parts[i].a *= 0.8f;
+            for(auto &p: fiori1->parts) {
+                p.r = p.r*0.5f+0.5f;
+                p.g = p.g*0.5f+0.5f;
+                p.b = p.b*0.5f+0.5f;
+                p.a *= 0.8f;
             }
             once = false;
         }
         if (ot != t) {
             fiori1->move(t-ot);
         }
-        for(int i = 0; i < fiori1->num; i++) {
-            if (fiori1->parts[i].position.z>750) fiori1->parts[i].position.z -= 1500;
+        for (auto& p : fiori1->parts) {
+            if (p.position.z>750) p.position.z -= 1500;
         }
         glRotatef(90, 0, 1, 0);
         glTranslatef(0, 100, 0);
@@ -813,7 +809,7 @@ void skInitDemoStuff()
 //	texturefont = perlin(7, 100, 0.6f, 0.5f, 2.5, true);
 
     fumo1 = new Particles(150);
-    for(int i = 0; i < fumo1->maxnum; i++) {
+    for(size_t i = 0; i < fumo1->parts.capacity(); i++) {
       float g = vlattice(i)*0.2f+0.2f;
       fumo1->add(Vector3(300*vlattice(i, 1), 50*vlattice(i, 1), 300*vlattice(i, 3)), zero3, 5*(vlattice(i, 4)*10+30), vlattice(i, 5)*10+30, g, g, g, 0.1f, 0);
     }
@@ -824,7 +820,7 @@ void skInitDemoStuff()
     smoke1 = smoke(8);
 
     fumo2 = new Particles(250);
-    for(int i = 0; i < fumo2->maxnum; i++) {
+    for(size_t i = 0; i < fumo2->parts.capacity(); i++) {
       float g = vlattice(i)*0.2f+0.2f;
       fumo2->add(Vector3(400*vlattice(i, 1)-200, 0, 1500*vlattice(i, 3)-750), 100*Vector3(vlattice(i, 10), vlattice(i, 11)+0.2f, vlattice(i, 12)), 5*(vlattice(i, 4)*10+30), vlattice(i, 5)*10+30, g, g, g, 0.1f, 0);
     }
@@ -834,16 +830,16 @@ void skInitDemoStuff()
     fumo2->setWind(new NoiseField(0.05f, 150, Vector3(0, 0, 100)));
     for (int i = 0; i < 100; i++) {
         fumo2->move(0.02f);
-        for(int j = 0; j < fumo2->num; j++) {
-            if (fumo2->parts[j].position.z > 900) fumo2->parts[j].position.z -= 1800;
+        for (auto& p : fumo2->parts) {
+            if (p.position.z > 900) p.position.z -= 1800;
         }
     }
-    for(int i = 0; i < fumo2->num; i++) {
-        fumo2->parts[i].speed.x += 75;
+    for (auto& p : fumo2->parts) {
+        p.speed.x += 75;
     }
 
     fumo3 = new Particles(150);
-    for(int i = 0; i < fumo1->maxnum; i++) {
+    for(size_t i = 0; i < fumo3->parts.capacity(); i++) {
         float r = vlattice(i, 7)*0.5f+0.5f;
         float g = vlattice(i, 8)*0.5f+0.5f;
         float b = vlattice(i, 9)*0.5f+0.5f;
