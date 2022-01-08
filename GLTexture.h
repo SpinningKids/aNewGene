@@ -24,6 +24,7 @@ public:
 
     void update();
     void use() const;
+    static void disable();
     unsigned int getID() const { return txt_; }
 };
 

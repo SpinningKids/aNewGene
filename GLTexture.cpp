@@ -43,3 +43,8 @@ void GLTexture::use() const {
         glEnable(GL_TEXTURE_2D);
     }
 }
+
+void GLTexture::disable() {
+    glDisable(GL_TEXTURE_2D);
+}
+
