@@ -17,8 +17,9 @@
 #include "Resources/resource.h"
 #else
 #include "SDL.h"
-#endif
 #include <gl/GL.h>
+#include <gl/GLU.h>
+#endif
 
 #include "Globals.h"
 #include "GenTex.h"
@@ -170,7 +171,7 @@ static void drawParticles(const Particles& ps, const GLTexture& tex) {
 void drawSmoke(float t) {
     static float ot = t;
 
-    float dt = t - ot;
+    const float dt = t - ot;
     if (dt != 0)
     {
         smoke1_particles->move(dt);
@@ -221,7 +222,7 @@ void drawSmoke(float t) {
 void drawSmoke2(float t, int v) {
     static float ot = t;
 
-    float dt = t - ot;
+    const float dt = t - ot;
     if (dt != 0) {
         smoke2_particles->move(dt);
         flower_particles->move(dt);
@@ -530,16 +531,16 @@ void skDraw() {
         timing = 12 + (int)((t - 11.25f * base) * 2 / base);
         basetime = 11.25f * base + (timing - 12) * base / 2;
     }
-    float scenetime = t - basetime;
+    const float scenetime = t - basetime;
 
-    int noting = (int)(scenetime * 4 / base);
-    float basenote = basetime + (noting * base) / 4;
+    const int noting = (int)(scenetime * 4 / base);
+    const float basenote = basetime + (noting * base) / 4;
 
-    int mezzing = (int)((t - basenote) * 32 / base);
-    float basemezz = basenote + (mezzing * base) / 32;
+    const int mezzing = (int)((t - basenote) * 32 / base);
+    const float basemezz = basenote + (mezzing * base) / 32;
 
-    int quarting = (int)((t - basenote) * 64 / base);
-    float basequart = basenote + (quarting * base) / 64;
+    const int quarting = (int)((t - basenote) * 64 / base);
+    //float basequart = basenote + (quarting * base) / 64;
 
     //    timing += 20;
     if (timing < 2) { // worms 1                    timing 0, 1
@@ -564,7 +565,7 @@ void skDraw() {
     } else if (timing < 11) { // seeds in the smoke   timing 7, 8, 9, 10
         static int onoting = 128;
         static int spos = 0;
-        int noting2 = (((timing - 7) & 1) << 6) + (noting << 4) + quarting;
+        const int noting2 = (((timing - 7) & 1) << 6) + (noting << 4) + quarting;
         if (noting2 < onoting) {
             spos = 0;
         }
@@ -654,11 +655,12 @@ void skInitDemoStuff() {
     glBegin(GL_QUADS);
     for (int i = 0; i < 40; i += 2) {
         for (int j = 0; j < 40; j++) {
-            float g1 = vlattice(i / 10, j / 10, 1) * 0.015f;
-            float g2 = vlattice((i + 5) / 10, (j) / 10, 2) * 0.015f;
-            float g3 = vlattice(i / 10, (j + 5) / 10, 2) * 0.015f;
             //            if (j == 98) g = 0;
-            glColor4f(0.875f + g1, 0.9f + g2, 0.85f + g3, 1);
+            glColor4f(
+                0.875f + vlattice(i / 10, j / 10, 1) * 0.015f,
+                0.9f + vlattice((i + 5) / 10, j / 10, 2) * 0.015f,
+                0.85f + vlattice(i / 10, (j + 5) / 10, 2) * 0.015f,
+                1);
             glVertex3f((i) * 100.f - 2000.f, 4 * landscape[i][j], (j) * 100.f - 2000.f);
             glVertex3f((i + 1) * 100.f - 2000.f, 4 * landscape[i + 1][j], (j) * 100.f - 2000.f);
             glVertex3f((i + 1) * 100.f - 2000.f, 4 * landscape[i + 1][j + 1], (j + 1) * 100.f - 2000.f);
@@ -698,15 +700,20 @@ void skInitDemoStuff() {
 
     smoke3_particles = new Particles(150);
     for (size_t i = 0; i < smoke3_particles->parts.capacity(); i++) {
-        float r = vlattice(i, 7) * 0.5f + 0.5f;
-        float g = vlattice(i, 8) * 0.5f + 0.5f;
-        float b = vlattice(i, 9) * 0.5f + 0.5f;
-        smoke3_particles->add({ 1500 * vlattice(i, 1), 50 * vlattice(i, 1) + 500, 1500 * vlattice(i, 3) }, zero3, 5 * (vlattice(i, 4) * 10 + 30), vlattice(i, 5) * 10 + 30, r, g, b, 0.2f, 0);
+        smoke3_particles->add(
+            { 1500 * vlattice(i, 1), 50 * vlattice(i, 1) + 500, 1500 * vlattice(i, 3) },
+            zero3,
+            5 * (vlattice(i, 4) * 10 + 30),
+            vlattice(i, 5) * 10 + 30,
+            vlattice(i, 7) * 0.5f + 0.5f,
+            vlattice(i, 8) * 0.5f + 0.5f,
+            vlattice(i, 9) * 0.5f + 0.5f,
+            0.2f,
+            0);
     }
     smoke3_particles->setFriction(0);
     smoke3_particles->setForceField(nullptr);
     smoke3_particles->setWind(nullptr);
-
 
     flower_particles = new Particles(400);
     flower_particles->setFriction(0.0001f);
