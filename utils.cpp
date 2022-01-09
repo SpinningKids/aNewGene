@@ -6,11 +6,15 @@
 #include <Windows.h>
 #include <mmsystem.h>
 #include "Resources/resource.h"
-#else
-#include "SDL.h"
-#endif
 #include <gl/GL.h>
 #include <gl/GLU.h>
+#else
+#include "SDL.h"
+#include <gl/GL.h>
+#include <gl/GLU.h>
+#include <GL/glx.h>
+#endif
+
 #include "Globals.h"
 #include "minifmod/minifmod.h"
 
@@ -166,7 +170,6 @@ void panViewPerspective(double fov, double znear, double zfar) {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 }
-
 
 /* Timing vars */
 static float      timer_time;
@@ -354,15 +357,15 @@ int main(int argc, char* argv[]) {
 
     done = 0;
     FSOUND_File_SetCallbacks(memopen, memclose, memread, memseek, memtell);
-    if (FSOUND_Init(SAMPLERATE, 0))
-    {
+    if (FSOUND_Init(SAMPLERATE, 0)) {
         fmodule = FMUSIC_LoadSong("cippa", nullptr);
         isMusicEnabled = (fmodule != nullptr);
     }
 
     skInitDemoStuff();
-    if (isMusicEnabled)
+    if (isMusicEnabled) {
         FMUSIC_PlaySong(fmodule);
+    }
     skInitTimer();
     while (!done) {
         skDraw();
