@@ -14,7 +14,7 @@
 #include <Windows.h>
 #include <gl/GL.h>
 #include <gl/GLU.h>
-#include "Resources/resource.h"
+#include "windows/resource.h"
 #else
 #include "SDL.h"
 #include <gl/GL.h>

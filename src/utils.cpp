@@ -5,7 +5,7 @@
 #define NOMINMAX
 #include <Windows.h>
 #include <mmsystem.h>
-#include "Resources/resource.h"
+#include "windows/resource.h"
 #include <gl/GL.h>
 #include <gl/GLU.h>
 #else
@@ -13,8 +13,8 @@
 #include <gl/GL.h>
 #include <gl/GLU.h>
 #include <GL/glx.h>
+#include "linux/dunesh_2.h"
 #endif
-
 #include "Globals.h"
 #include "minifmod/minifmod.h"
 
@@ -43,7 +43,7 @@ struct MEMFILE {
     void* data;
 };
 
-unsigned int memopen(char* name) {
+void* memopen(const char* name) {
 #ifdef WIN32
     HRSRC rec = FindResourceEx(GetModuleHandle(nullptr), "RC_RTDATA", name, 0);
     if (rec) {
@@ -52,20 +52,20 @@ unsigned int memopen(char* name) {
             0,
             LockResource(LoadResource(nullptr, rec)),
         };
-        return (unsigned int)memfile;
+        return memfile;
     }
-    return -1;
+    return nullptr;
 #else
     MEMFILE* memfile = new MEMFILE{
         sizeof(dixiesmod),
         0,
         dixiesmod,
     };
-    return (unsigned int)memfile;
+    return memfile;
 #endif
 }
 
-void memclose(unsigned int handle) {
+void memclose(void* handle) {
     MEMFILE* memfile = (MEMFILE*)handle;
 #ifdef WIN32
     if (memfile) {
@@ -75,7 +75,7 @@ void memclose(unsigned int handle) {
     delete memfile;
 }
 
-int memread(void* buffer, int size, unsigned int handle) {
+int memread(void* buffer, int size, void* handle) {
     MEMFILE* memfile = (MEMFILE*)handle;
 
     if (memfile->pos + size >= memfile->length) {
@@ -87,7 +87,7 @@ int memread(void* buffer, int size, unsigned int handle) {
     return size;
 }
 
-void memseek(unsigned int handle, int pos, signed char mode) {
+void memseek(void* handle, int pos, int mode) {
     MEMFILE* memfile = (MEMFILE*)handle;
 
     if (mode == SEEK_SET) {
@@ -102,7 +102,7 @@ void memseek(unsigned int handle, int pos, signed char mode) {
     }
 }
 
-int memtell(unsigned int handle) {
+int memtell(void* handle) {
     MEMFILE* memfile = (MEMFILE*)handle;
     return memfile->pos;
 }
@@ -184,17 +184,11 @@ static float      timer_lastup;
 static float      timer_fps;
 
 /* Timing Functions */
-extern "C" {
-    HWAVEOUT FSOUND_WaveOutHandle;
-}
 
 static float skTimerFrame() {
     if (isMusicEnabled)
     {
-        MMTIME mmtime;
-        mmtime.wType = TIME_SAMPLES;
-        waveOutGetPosition(FSOUND_WaveOutHandle, &mmtime, sizeof(mmtime));
-        timer_time = mmtime.u.ticks / (float)SAMPLERATE;
+        timer_time = FSOUND_TimeFromSamples();
     } else {
 #ifdef WIN32
         __int64 a;
@@ -235,7 +229,6 @@ float skGetFPS() {
 void skStopMusic() {
     if (isMusicEnabled) {
         FMUSIC_FreeSong(fmodule);
-        FSOUND_Close();
         isMusicEnabled = false;
         skInitTimer();
         skTimerFrame();
@@ -500,10 +493,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hprevinstance, LPSTR lpcmdline
                 skTimerFrame();
             }
         }
-        if (isMusicEnabled) {
-            FMUSIC_FreeSong(fmodule);
-            FSOUND_Close();
-        }
+        skStopMusic();
     } else {
         MessageBox(GetDesktopWindow(), "Can't create window", "SKerror", MB_OK);
     }

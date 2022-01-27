@@ -1,0 +1,52 @@
+﻿# CMakeList.txt : Top-level CMake project file, do global configuration
+# and include sub-projects here.
+#
+cmake_minimum_required (VERSION 3.8)
+
+get_filename_component(TARGET_NAME ${CMAKE_CURRENT_LIST_DIR} NAME)
+
+project (${TARGET_NAME})
+
+#if(("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC") AND ("${CMAKE_BUILD_TYPE}" STREQUAL "Release"))
+#	add_definitions("/O1i /FAs /GL /EHs-a- /GS- /GR- /d2noftol3")
+#	SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} /MAP:out.map")
+#endif()
+
+# Include sub-projects.
+add_subdirectory ("extern")
+
+find_package(OpenGL REQUIRED COMPONENTS OpenGL)
+
+set(SRC_DIR ${CMAKE_CURRENT_LIST_DIR}/src)
+
+set(RES_DIR ${CMAKE_CURRENT_LIST_DIR}/resources)
+
+set(PRIVATE_HEADER_FILES
+  ${SRC_DIR}/GenTex.h
+  ${SRC_DIR}/Globals.h
+  ${SRC_DIR}/GLTexture.h
+  ${SRC_DIR}/Math3.h
+  ${SRC_DIR}/noise.h
+  ${SRC_DIR}/Particles.h
+  ${SRC_DIR}/utils.h
+)
+
+set(SRC_FILES
+  ${SRC_DIR}/GenTex.cpp
+  ${SRC_DIR}/GLTexture.cpp
+  ${SRC_DIR}/Main.cpp
+  ${SRC_DIR}/MATH3.CPP
+  ${SRC_DIR}/noise.cpp
+  ${SRC_DIR}/Particles.cpp
+  ${SRC_DIR}/utils.cpp
+)
+
+set(RES_FILES
+  ${RES_DIR}/windows/resource.rc
+)
+
+# Add source to this project's executable.
+add_executable(${TARGET_NAME} WIN32 ${PRIVATE_HEADER_FILES} ${SRC_FILES} ${RES_FILES})
+target_include_directories(${TARGET_NAME} PRIVATE ${RES_DIR})
+target_link_libraries(${TARGET_NAME} PUBLIC minifmod OpenGL::GL OpenGL::GLU)
+set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 20)
