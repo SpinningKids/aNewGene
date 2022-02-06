@@ -7,10 +7,18 @@ get_filename_component(TARGET_NAME ${CMAKE_CURRENT_LIST_DIR} NAME)
 
 project (${TARGET_NAME})
 
-#if(("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC") AND ("${CMAKE_BUILD_TYPE}" STREQUAL "Release"))
-#	add_definitions("/O1i /FAs /GL /EHs-a- /GS- /GR- /d2noftol3")
-#	SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} /MAP:out.map")
-#endif()
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+	add_compile_options(
+		"$<$<CONFIG:RELEASE>:/O1i>"
+		"$<$<CONFIG:RELEASE>:/FAs>"
+		"$<$<CONFIG:RELEASE>:/GL>"
+		"/EHs-"
+		"$<$<CONFIG:RELEASE>:/GS->"
+		"$<$<CONFIG:RELEASE>:/GR->"
+		"/d2noftol3"
+	)
+	add_link_options("/MAP:out.map")
+endif()
 
 # Include sub-projects.
 add_subdirectory ("extern")
