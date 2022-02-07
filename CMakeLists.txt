@@ -15,8 +15,10 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 		"/EHs-"
 		"$<$<CONFIG:RELEASE>:/GS->"
 		"$<$<CONFIG:RELEASE>:/GR->"
-		"/d2noftol3"
 	)
+	if("${CMAKE_SIZEOF_VOID_P}" STREQUAL "4")
+		add_compile_options("/d2noftol3")
+	endif()
 	add_link_options("/MAP:out.map")
 endif()
 
