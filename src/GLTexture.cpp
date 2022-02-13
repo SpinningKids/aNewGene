@@ -8,6 +8,7 @@
 #include "GLTexture.h"
 #include <memory.h>
 #ifdef WIN32
+#define NOMINMAX
 #include <Windows.h>
 #endif
 #include <gl/GL.h>
