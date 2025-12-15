@@ -9,6 +9,7 @@
 #ifndef NOISE_H_
 #define NOISE_H_
 
+#include <cmath>
 #include <cstdint>
 #include <limits>
 
@@ -27,7 +28,7 @@ namespace details {
     float valueFunc(table_type i);
     inline unsigned short permutation_table[tableSize];
 
-    constexpr table_type permutation(table_type index) {
+    inline table_type permutation(table_type index) {
         if constexpr (tableMask == std::numeric_limits<table_type>::max())
         {
             return permutation_table[index];

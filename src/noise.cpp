@@ -8,6 +8,7 @@
 
 #include "noise.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <cmath>
 

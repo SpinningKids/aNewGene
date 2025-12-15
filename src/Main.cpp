@@ -10,8 +10,12 @@
  ************************************/
 
 #ifdef WIN32
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include <Windows.h>
 #include <gl/GL.h>
 #include <gl/GLU.h>
@@ -28,6 +32,7 @@
 #include "Particles.h"
 #include "utils.h"
 
+#include <algorithm>
 #include <memory>
 #include <numeric>
 #include <tuple>
@@ -570,7 +575,7 @@ void skDraw() {
         if (noting2 < onoting) {
             spos = 0;
         }
-        const int syncs[] = { 4, 6, 14, 32, 34, 36, 38, 44, 48, 49, 68, 70, 78, 84, 88, 90, 96, 98, 100, 102 };
+        const int syncs[] = { 4, 6, 14, 32, 34, 36, 38, 44, 48, 49, 68, 70, 78, 84, 88, 90, 96, 98, 100, 102, 128 };
         while (noting2 >= syncs[spos]) {
             for (int i = 0; i < 5; i++) {
                 flower_particles->add(

@@ -19,7 +19,8 @@ GLTexture::GLTexture(int logsize) : mem_(new GLfloat[4 * (1 << logsize) * (1 << 
 
 GLTexture::~GLTexture() {
     delete[] mem_;
-    glDeleteTextures(1, &txt_);
+    if (txt_)
+        glDeleteTextures(1, &txt_);
 }
 
 void GLTexture::update() {
