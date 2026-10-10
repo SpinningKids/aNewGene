@@ -21,35 +21,27 @@ jobs:
           git lfs pull
           $ico = Get-Item Resources/windows/SK.ICO
           if ($ico.Length -lt 200) { throw "SK.ICO is only $($ico.Length) bytes (looks like an LFS pointer)" }
-      - name: Locate Visual Studio
+      - name: Configure + build (debug)
         shell: pwsh
         run: |
           $root = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
           if (-not $root) { throw "Visual Studio with C++ tools not found" }
-          "vsroot=$root" | Out-File -Encoding ascii vsroot.env
-      - name: Configure debug
-        shell: cmd
-        run: |
-          set /p VSROOT=<vsroot.env
-          call "%VSROOT%\VC\Auxiliary\Build\vcvarsall.bat" x64
+          $vcvars = Join-Path $root "VC\Auxiliary\Build\vcvarsall.bat"
+          foreach ($line in (cmd /c "call `"$vcvars`" x64 && set")) {
+              if ($line -match "^([^=]+)=(.*)$") { [Environment]::SetEnvironmentVariable($matches[1], $matches[2], 'Process') }
+          }
           cmake --preset x64-debug
-      - name: Build debug
-        shell: cmd
-        run: |
-          set /p VSROOT=<vsroot.env
-          call "%VSROOT%\VC\Auxiliary\Build\vcvarsall.bat" x64
           cmake --build out/build/x64-debug --parallel
-      - name: Configure release
-        shell: cmd
+      - name: Configure + build (release)
+        shell: pwsh
         run: |
-          set /p VSROOT=<vsroot.env
-          call "%VSROOT%\VC\Auxiliary\Build\vcvarsall.bat" x64
+          $root = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $root) { throw "Visual Studio with C++ tools not found" }
+          $vcvars = Join-Path $root "VC\Auxiliary\Build\vcvarsall.bat"
+          foreach ($line in (cmd /c "call `"$vcvars`" x64 && set")) {
+              if ($line -match "^([^=]+)=(.*)$") { [Environment]::SetEnvironmentVariable($matches[1], $matches[2], 'Process') }
+          }
           cmake --preset x64-release
-      - name: Build release
-        shell: cmd
-        run: |
-          set /p VSROOT=<vsroot.env
-          call "%VSROOT%\VC\Auxiliary\Build\vcvarsall.bat" x64
           cmake --build out/build/x64-release --parallel
 
   linux:
@@ -64,7 +56,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev libpulse-dev libsdl2-dev
       - name: Configure
-        run: cmake --preset linux-debug -- -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+        run: cmake --preset linux-debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
       - name: Build
         run: cmake --build out/build/linux-debug --parallel
 
@@ -80,7 +72,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y clang-tidy libgl1-mesa-dev libglu1-mesa-dev libpulse-dev libsdl2-dev
       - name: Configure
-        run: cmake --preset linux-debug -- -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+        run: cmake --preset linux-debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
       - name: clang-tidy
         run: >
           clang-tidy -p out/build/linux-debug -quiet
