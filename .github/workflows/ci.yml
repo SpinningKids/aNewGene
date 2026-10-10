@@ -14,18 +14,37 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - uses: azure/setup-lfs@v1
-      - uses: ilammy/msvc-devcmd@v1
-        with:
-          architecture: x64
+      - uses: git-lfs/setup-lfs@v3
+      - name: Locate Visual Studio
+        shell: pwsh
+        run: |
+          $root = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $root) { throw "Visual Studio with C++ tools not found" }
+          "vsroot=$root" | Out-File -Encoding ascii vsroot.env
       - name: Configure debug
-        run: cmake --preset x64-debug
+        shell: cmd
+        run: |
+          set /p VSROOT=<vsroot.env
+          call "%VSROOT%\VC\Auxiliary\Build\vcvarsall.bat" x64
+          cmake --preset x64-debug
       - name: Build debug
-        run: cmake --build out/build/x64-debug --parallel
+        shell: cmd
+        run: |
+          set /p VSROOT=<vsroot.env
+          call "%VSROOT%\VC\Auxiliary\Build\vcvarsall.bat" x64
+          cmake --build out/build/x64-debug --parallel
       - name: Configure release
-        run: cmake --preset x64-release
+        shell: cmd
+        run: |
+          set /p VSROOT=<vsroot.env
+          call "%VSROOT%\VC\Auxiliary\Build\vcvarsall.bat" x64
+          cmake --preset x64-release
       - name: Build release
-        run: cmake --build out/build/x64-release --parallel
+        shell: cmd
+        run: |
+          set /p VSROOT=<vsroot.env
+          call "%VSROOT%\VC\Auxiliary\Build\vcvarsall.bat" x64
+          cmake --build out/build/x64-release --parallel
 
   linux:
     name: Linux (GCC)
@@ -34,7 +53,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - uses: azure/setup-lfs@v1
+      - uses: git-lfs/setup-lfs@v3
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -51,7 +70,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - uses: azure/setup-lfs@v1
+      - uses: git-lfs/setup-lfs@v3
       - name: Install dependencies
         run: |
           sudo apt-get update
