@@ -10,7 +10,6 @@ project (${TARGET_NAME})
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 	add_compile_options(
 		"$<$<CONFIG:RELEASE>:/O1i>"
-		"$<$<CONFIG:RELEASE>:/FAs>"
 		"$<$<CONFIG:RELEASE>:/GL>"
 		"$<$<CONFIG:RELEASE>:/Gy>"
 		"$<$<CONFIG:RELEASE>:/GF>"
