@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  windows:
+    name: Windows (MSVC, debug + release)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: azure/setup-lfs@v1
+      - uses: ilammy/msvc-devcmd@v1
+        with:
+          architecture: x64
+      - name: Configure debug
+        run: cmake --preset x64-debug
+      - name: Build debug
+        run: cmake --build out/build/x64-debug --parallel
+      - name: Configure release
+        run: cmake --preset x64-release
+      - name: Build release
+        run: cmake --build out/build/x64-release --parallel
+
+  linux:
+    name: Linux (GCC)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: azure/setup-lfs@v1
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev libpulse-dev libsdl2-dev
+      - name: Configure
+        run: cmake --preset linux-debug -- -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+      - name: Build
+        run: cmake --build out/build/linux-debug --parallel
+
+  lint:
+    name: clang-tidy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: azure/setup-lfs@v1
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-tidy libgl1-mesa-dev libglu1-mesa-dev libpulse-dev libsdl2-dev
+      - name: Configure
+        run: cmake --preset linux-debug -- -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+      - name: clang-tidy
+        run: >
+          clang-tidy -p out/build/linux-debug -quiet
+          src/GenTex.cpp src/GLTexture.cpp src/Main.cpp src/MATH3.CPP
+          src/Particles.cpp src/noise.cpp src/utils.cpp

@@ -46,24 +46,21 @@ namespace {
 
 namespace details {
 
-    float valueFunc(table_type i)
-    {
+    float valueFunc(table_type i) {
         return 1.f - 2.f * i / (tableSize - 1);
     }
 
     float vnoise2(size_t array_size, table_type index, const table_type ix[], const float fx[]) {
-        if (!array_size)
-        {
+        if (!array_size) {
             return valueFunc(index);
         }
         const table_type base_index = index + ix[array_size - 1];
-        return
-            catmullrom(
-                fx[array_size - 1],
-                vnoise2(array_size - 1, permutation(base_index - 1), ix, fx),
-                vnoise2(array_size - 1, permutation(base_index + 0), ix, fx),
-                vnoise2(array_size - 1, permutation(base_index + 1), ix, fx),
-                vnoise2(array_size - 1, permutation(base_index + 2), ix, fx));
+        return catmullrom(
+            fx[array_size - 1],
+            vnoise2(array_size - 1, permutation(base_index - 1), ix, fx),
+            vnoise2(array_size - 1, permutation(base_index + 0), ix, fx),
+            vnoise2(array_size - 1, permutation(base_index + 1), ix, fx),
+            vnoise2(array_size - 1, permutation(base_index + 2), ix, fx));
     }
 
     bool init = valueTabInit(665); // risky business. This might be optimized away.

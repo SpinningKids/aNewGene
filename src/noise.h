@@ -29,18 +29,15 @@ namespace details {
     inline unsigned short permutation_table[tableSize];
 
     inline table_type permutation(table_type index) {
-        if constexpr (tableMask == std::numeric_limits<table_type>::max())
-        {
+        if constexpr (tableMask == std::numeric_limits<table_type>::max()) {
             return permutation_table[index];
-        }
-        else
-        {
+        } else {
             return permutation_table[index & tableMask];
         }
     }
 
-    template<size_t N>
-    uint16_t index(const table_type(&idx)[N]) {
+    template <size_t N>
+    uint16_t index(const table_type (&idx)[N]) {
         int new_index = 0;
         for (int i = 0; i < N; i++) {
             new_index = permutation(new_index + idx[i]);
@@ -51,13 +48,13 @@ namespace details {
     float vnoise2(size_t array_size, table_type index, const table_type ix[], const float fx[]);
 }
 
-template<size_t N>
-float vlattice(const table_type(&idx)[N]) {
+template <size_t N>
+float vlattice(const table_type (&idx)[N]) {
     return details::valueFunc(details::index(idx));
 }
 
-template<size_t N>
-float vnoise(const float(&x)[N]) {
+template <size_t N>
+float vnoise(const float (&x)[N]) {
     table_type ix[N];
     float fx[N];
     for (size_t i = 0; i < N; i++) {

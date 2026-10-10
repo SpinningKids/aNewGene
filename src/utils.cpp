@@ -9,19 +9,20 @@
 #define NOMINMAX
 #endif
 #include <Windows.h>
-#include <mmsystem.h>
-#include "windows/resource.h"
-#include <gl/GL.h>
-#include <gl/GLU.h>
 #else
-#include "SDL.h"
-#include <gl/GL.h>
-#include <gl/GLU.h>
-#include <GL/glx.h>
-#include "linux/dunesh_2.h"
+#include <SDL2/SDL.h>
+#include <unistd.h>
 #endif
+#include <GL/gl.h>
+#include <GL/glu.h>
+#include "embedded/dunesh_2.h"
+#include "embedded/gcbitmap.h"
 #include "Globals.h"
 #include "minifmod/minifmod.h"
+#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <utility>
 
 constexpr int ORIGINAL_WIDTH = 640;
@@ -36,6 +37,7 @@ HINSTANCE g_hinstance;
 constexpr char WINDOW_CLASS_NAME[] = "SKCLASS";
 #else
 int done = 0;
+SDL_Window* sdl_window = nullptr;
 #endif /* WIN32 */
 
 PlayerState* player_state = nullptr;
@@ -49,39 +51,21 @@ bool isMusicEnabled() {
 struct MEMFILE {
     size_t length;
     size_t pos;
-    void* data;
+    const void* data;
 };
 
 void* memopen(const char* name) {
-#ifdef WIN32
-    HRSRC rec = FindResourceEx(GetModuleHandle(nullptr), "RC_RTDATA", name, 0);
-    if (rec) {
-        MEMFILE* memfile = new MEMFILE{
-            SizeofResource(nullptr, rec),
-            0,
-            LockResource(LoadResource(nullptr, rec)),
-        };
-        return memfile;
-    }
-    return nullptr;
-#else
+    (void)name;
     MEMFILE* memfile = new MEMFILE{
         sizeof(dixiesmod),
         0,
         dixiesmod,
     };
     return memfile;
-#endif
 }
 
 void memclose(void* handle) {
-    MEMFILE* memfile = (MEMFILE*)handle;
-#ifdef WIN32
-    if (memfile) {
-        UnlockResource((HGLOBAL)(memfile->data));
-    }
-#endif
-    delete memfile;
+    delete (MEMFILE*)handle;
 }
 
 size_t memread(void* buffer, size_t size, void* handle) {
@@ -122,7 +106,7 @@ static void skSwapBuffers() {
 #ifdef WIN32
     SwapBuffers(hDC);
 #else
-    SDL_GL_SwapBuffers();
+    SDL_GL_SwapWindow(sdl_window);
 #endif
 }
 
@@ -181,23 +165,22 @@ void panViewPerspective(double fov, double znear, double zfar) {
 }
 
 /* Timing vars */
-static float      timer_time;
+static float timer_time;
 #ifdef WIN32
-static __int64    timer_start;
-static __int64    timer_frq;
+static __int64 timer_start;
+static __int64 timer_frq;
 #else
-static Uint32     timer_start;
+static Uint32 timer_start;
 static constexpr float timer_frq = 1000.f;
 #endif
-static float      timer_lastup;
-static float      timer_fps;
+static float timer_lastup;
+static float timer_fps;
 
 /* Timing Functions */
 
 static float skTimerFrame() {
-    if (isMusicEnabled)
-    {
-        timer_time = FMUSIC_GetTime()/1000.f;
+    if (isMusicEnabled()) {
+        timer_time = FMUSIC_GetTime() / 1000.f;
     } else {
 #ifdef WIN32
         __int64 a;
@@ -245,42 +228,31 @@ void skStopMusic() {
 
 // textureload
 
-unique_ptr<GLTexture> skLoadTexture(int resid, int logsize) {
-    static HDC displaydc = CreateDC("DISPLAY", nullptr, nullptr, nullptr);
-    auto ret = make_unique<GLTexture>(logsize);
-    int txsize = ret->getSize();
-    HBITMAP h = (HBITMAP)LoadImage(g_hinstance, MAKEINTRESOURCE(resid), IMAGE_BITMAP, txsize, txsize, LR_CREATEDIBSECTION);
-    DIBSECTION ds;
-    GetObject(h, sizeof(ds), &ds);
-    BITMAPINFOHEADER a = {
-        sizeof(BITMAPINFOHEADER),
-        txsize,
-        -txsize,
-        1,
-        32,
-        BI_RGB,
-        (DWORD)(4 * txsize * txsize),
-        0,
-        0,
-        0,
-        0
-    };
-    unsigned char* texture = new unsigned char[a.biSizeImage];
-    GetDIBits(displaydc, h, 0, txsize, texture, (BITMAPINFO*)&a, DIB_RGB_COLORS);
+// The credits bitmap is embedded in the form we use (embedded/gcbitmap.h):
+// the 4bpp pixel payload, 2 pixels per byte, rows stored bottom-up. Its
+// 16-color palette is the gray ramp (entry i has value i * 0x11), so a
+// pixel's luminance is its index * 0x11. Take that as RGB on the top 3/4
+// of the image and as alpha on the bottom 1/4, exactly like the former
+// GDI path did.
+unique_ptr<GLTexture> skLoadTexture() {
+    auto ret = make_unique<GLTexture>(8);
+    constexpr int txsize = 256;
+    constexpr int topsize = txsize * txsize * 3 / 4;
     GLfloat* tex = ret->getImage();
     const float un255 = 1.0f / 255.0f;
-    int topsize = txsize * 3 / 4;
-    for (int i = 0; i < txsize * topsize; i++) {
-        tex[i * 4] = tex[i * 4 + 1] = tex[i * 4 + 2] = texture[i * 4] * un255;
-        tex[i * 4 + 3] = 1.0f;
-    }
-    for (int i = txsize * topsize; i < txsize * txsize; i++) {
-        tex[i * 4] = tex[i * 4 + 1] = tex[i * 4 + 2] = 1.0f;
-        tex[i * 4 + 3] = 1.0f - texture[i * 4] * un255;
+    for (int i = 0; i < txsize * txsize; i++) {
+        const unsigned char pixelbyte = gcbitmap_4bpp[(i ^ 0xff00) >> 1];
+        const unsigned char index = (i & 1) ? (pixelbyte & 0x0f) : (pixelbyte >> 4);
+        const int luma = index * 0x11;
+        if (i < topsize) {
+            tex[i * 4] = tex[i * 4 + 1] = tex[i * 4 + 2] = luma * un255;
+            tex[i * 4 + 3] = 1.0f;
+        } else {
+            tex[i * 4] = tex[i * 4 + 1] = tex[i * 4 + 2] = 1.0f;
+            tex[i * 4 + 3] = 1.0f - luma * un255;
+        }
     }
     ret->update();
-    delete[] texture;
-    DeleteObject(h);
     return ret;
 }
 
@@ -317,29 +289,30 @@ int main(int argc, char* argv[]) {
         case 'w':
             flag_w = 1;
             break;
-        case 'd':
-        {
+        case 'd': {
             char* tail;
             if (optarg != nullptr) flag_d_value = strtol(optarg, &tail, 0);
             if (optarg == nullptr || tail == optarg || *tail != '\0') {
                 fprintf(stderr, "Invalid display depth (bits per pixel)\n");
                 exit(1);
             }
-        }
-        break;
+        } break;
         case '?':
         default:
             fprintf(stderr,
-                "\n%s\n"
-                "  -w        force windowed mode\n"
-                "  -d bpp    set display depth (defaults to let SDL decide)\n\n", argv[0]);
+                    "\n%s\n"
+                    "  -w        force windowed mode\n"
+                    "  -d bpp    set display depth (defaults to let SDL decide)\n\n",
+                    argv[0]);
             exit(0);
             break;
         }
     }
 
     if (flag_hidden != 2) flag_hidden = 0;
-    if (flag_hidden) hiddenpart = true; else hiddenpart = false;
+    if (flag_hidden) hiddenpart = true;
+    else
+        hiddenpart = false;
 
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -347,17 +320,29 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-    if (SDL_SetVideoMode(WIDTH, HEIGHT, flag_d_value, SDL_OPENGL | (!flag_w * SDL_FULLSCREEN)) == nullptr) {
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    if (flag_d_value > 0) {
+        SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, flag_d_value);
+    }
+    sdl_window = SDL_CreateWindow("PK is dead", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT, SDL_WINDOW_OPENGL);
+    if (!flag_w) {
+        SDL_SetWindowFullscreen(sdl_window, SDL_TRUE);
+    }
+    if (sdl_window == nullptr) {
         fprintf(stderr, "Unable to create OpenGL screen: %s\n", SDL_GetError());
         SDL_Quit();
         exit(2);
     }
-
-    SDL_WM_SetCaption("PK is dead", nullptr);
+    if (SDL_GL_CreateContext(sdl_window) == nullptr) {
+        fprintf(stderr, "Unable to create OpenGL context: %s\n", SDL_GetError());
+        SDL_Quit();
+        exit(3);
+    }
     SDL_ShowCursor(0);
 
     done = 0;
     FSOUND_File_SetCallbacks(memopen, memclose, memread, memseek, memtell);
+    Module* module = nullptr;
     if (FSOUND_Init(SAMPLERATE, 0)) {
         module = FMUSIC_LoadSong("cippa", nullptr);
     }
@@ -393,8 +378,12 @@ int main(int argc, char* argv[]) {
 }
 #else
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hprevinstance, LPSTR lpcmdline, int ncmdshow) {
-    hiddenpart = (strcmp(lpcmdline, "/PK") == 0) || (_stricmp(lpcmdline, "/g") == 0);
+    // lpcmdline arrives with a leading space (Windows convention); trim it so
+    // that "/PK" and "/g" match no matter how they are typed.
+    while (*lpcmdline == ' ') ++lpcmdline;
+    hiddenpart = (_stricmp(lpcmdline, "/PK") == 0) || (_stricmp(lpcmdline, "/g") == 0);
     g_hinstance = hinstance;
+    SetProcessDPIAware(); // ask for physical pixels, not DPI-virtualized ones
     HDC l_hDC = GetDC(GetDesktopWindow());
 
     WNDCLASSEX winclass{
@@ -453,10 +442,13 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hprevinstance, LPSTR lpcmdline
         }
     }
     if (!fullscreen) {
-        windowStyle = WS_OVERLAPPEDWINDOW;
+        // the mode switch was refused: stay in the current desktop mode and cover
+        // it whole and borderless, rather than a framed window in the corner
+        windowStyle = WS_POPUP;
         windowExtendedStyle = WS_EX_APPWINDOW;
-        RECT windowRect = { 0, 0, WIDTH, HEIGHT };
-        AdjustWindowRectEx(&windowRect, windowStyle, 0, windowExtendedStyle);
+        WIDTH = previous_mode.dmPelsWidth;
+        HEIGHT = previous_mode.dmPelsHeight;
+        BITSPERPIXEL = previous_mode.dmBitsPerPel;
     }
     if (HWND hWND = CreateWindowEx(windowExtendedStyle, WINDOW_CLASS_NAME, WINDOW_TITLE, windowStyle, 0, 0, WIDTH, HEIGHT, HWND_DESKTOP, nullptr, hinstance, nullptr)) {
         hDC = GetDC(hWND);
@@ -472,11 +464,11 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hprevinstance, LPSTR lpcmdline
             wglMakeCurrent(hDC, hRC);
         }
 
-        ShowWindow(hWND, SW_NORMAL);								// Make The Window Visible
+        ShowWindow(hWND, SW_NORMAL); // Make The Window Visible
         FSOUND_File_SetCallbacks(memopen, memclose, memread, memseek, memtell);
         Module* module = nullptr;
         if (FSOUND_Init(SAMPLERATE, 0)) {
-            module = FMUSIC_LoadSong(MAKEINTRESOURCE(IDR_RC_MUSIC), nullptr);
+            module = FMUSIC_LoadSong("cippa", nullptr);
         }
 
         skInitDemoStuff();

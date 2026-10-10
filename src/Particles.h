@@ -7,45 +7,44 @@
 
 struct Particles;
 
-//typedef Vector3 Field(Particles &, int);
-//Vector3 NullField(Particles &p, int num);
+// typedef Vector3 Field(Particles &, int);
+// Vector3 NullField(Particles &p, int num);
 
 struct ParticleInfo {
-  Vector3 position;
-  Vector3 speed;
-  float size;
-  float mass;
-  float r, g, b, a;
-  double timestamp;
-//  bool active;
+    Vector3 position;
+    Vector3 speed;
+    float size;
+    float mass;
+    float r, g, b, a;
+    double timestamp;
+    //  bool active;
 };
 
 struct Field {
-    virtual Vector3 operator () (const ParticleInfo& p) const = 0;
+    virtual Vector3 operator()(const ParticleInfo& p) const = 0;
     virtual ~Field() = default;
 };
 
 struct Particles {
-  std::vector<ParticleInfo> parts;
-  Field *force;
-  Field *wind;
+    std::vector<ParticleInfo> parts;
+    Field* force;
+    Field* wind;
 
-  float friction;
+    float friction;
 
-  explicit Particles(int _num);
-  void add(const Vector3 &p, const Vector3 &v, float s, float m, float r, float g, float b, float a, double timestamp);
+    explicit Particles(int _num);
+    void add(const Vector3& p, const Vector3& v, float s, float m, float r, float g, float b, float a, double timestamp);
 
-  void setFriction(float f) { friction = f; }
-  float getFriction() const { return friction; }
+    void setFriction(float f) { friction = f; }
+    float getFriction() const { return friction; }
 
-  void setForceField(Field *f) { force = f; }
-  Field *getForceField() const { return force; }
+    void setForceField(Field* f) { force = f; }
+    Field* getForceField() const { return force; }
 
-  void setWind(Field *f) { wind = f; }
-  Field *getWind() const { return wind; }
+    void setWind(Field* f) { wind = f; }
+    Field* getWind() const { return wind; }
 
-  void move(float dt);
-
+    void move(float dt);
 };
 
 #endif // PARTICLES_H_

@@ -14,7 +14,7 @@
 
 using namespace std;
 
-template<typename PixelFunction>
+template <typename PixelFunction>
 static unique_ptr<GLTexture> radialSymmetryTextureHelper(int logsize, PixelFunction&& pixelFunction) {
     auto texture = make_unique<GLTexture>(logsize);
     const int size = texture->getSize();

@@ -1,0 +1,19 @@
+---
+# Derived from the existing codebase: attached braces, 4-space indent,
+# indented namespaces, long lines preserved, pointers aligned to the type,
+# braced lists keep inner spaces, include order untouched.
+BasedOnStyle: LLVM
+IndentWidth: 4
+ColumnLimit: 0
+PointerAlignment: Left
+AccessModifierOffset: -4
+EmptyLineBeforeAccessModifier: Never
+AllowShortIfStatementsOnASingleLine: Always
+AllowShortLoopsOnASingleLine: true
+FixNamespaceComments: false
+Cpp11BracedListStyle: false
+NamespaceIndentation: All
+SortIncludes: false
+MaxEmptyLinesToKeep: 2
+AlignTrailingComments: false
+Standard: c++20

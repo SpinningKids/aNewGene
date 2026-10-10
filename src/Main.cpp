@@ -17,14 +17,9 @@
 #define NOMINMAX
 #endif
 #include <Windows.h>
-#include <gl/GL.h>
-#include <gl/GLU.h>
-#include "windows/resource.h"
-#else
-#include "SDL.h"
-#include <gl/GL.h>
-#include <gl/GLU.h>
 #endif
+#include <GL/gl.h>
+#include <GL/glu.h>
 
 #include "Globals.h"
 #include "GenTex.h"
@@ -33,6 +28,7 @@
 #include "utils.h"
 
 #include <algorithm>
+#include <cstring>
 #include <memory>
 #include <numeric>
 #include <tuple>
@@ -41,7 +37,7 @@ using namespace std;
 
 bool greets = false;
 
-//globals
+// globals
 /*##########################################################*/
 /*Standard Var definitions :								*/
 /*##########################################################*/
@@ -67,15 +63,15 @@ class FixedField : Field {
     Vector3 value;
 public:
     FixedField(const Vector3& _value) : value(_value) {}
-    Vector3 operator () (const ParticleInfo&) const override { return value; }
+    Vector3 operator()(const ParticleInfo&) const override { return value; }
 };
 
-class  NoiseField : public Field {
+class NoiseField : public Field {
     float scale, amplitude;
     Vector3 carrier;
 public:
     NoiseField(float _scale, float _amplitude, const Vector3& _carrier = zero3) : scale(_scale), amplitude(_amplitude), carrier(_carrier) {}
-    Vector3 operator () (const ParticleInfo& p) const override {
+    Vector3 operator()(const ParticleInfo& p) const override {
         Vector3 a = scale * p.position;
         return { carrier.x + amplitude * vnoise(a.y, a.z), carrier.y + amplitude * vnoise(a.z, a.x), carrier.z + amplitude * vnoise(a.x, a.y) };
     }
@@ -85,7 +81,7 @@ class ArchimedesField : public Field {
     float density;
 public:
     ArchimedesField(float _density) : density(_density) {}
-    Vector3 operator () (const ParticleInfo& p) const override {
+    Vector3 operator()(const ParticleInfo& p) const override {
         constexpr float fourthirdspi = 4.1887902047863909846168578443727f;
         return { 0, density - p.mass / (fourthirdspi * p.size * p.size * p.size), 0 };
     }
@@ -94,12 +90,12 @@ public:
 struct ZSpringField : Field {
     float k;
     ZSpringField(float _k) : k(_k) {}
-    Vector3 operator () (const ParticleInfo& p) const override {
+    Vector3 operator()(const ParticleInfo& p) const override {
         return { -k * p.position.x, -k * p.position.y, 0 };
     }
 };
 
-//effects
+// effects
 
 static void glVertex3v3v(const Vector3& v) {
     float tmp[3];
@@ -139,12 +135,12 @@ static std::tuple<Vector3, Vector3> getStupidVectors() {
     float model[16];
     glGetFloatv(GL_MODELVIEW_MATRIX, model);
     return {
-        {model[0] + model[1], model[4] + model[5], model[8] + model[9]},
-        {model[1] - model[0], model[5] - model[4], model[9] - model[8] }
+        { model[0] + model[1], model[4] + model[5], model[8] + model[9] },
+        { model[1] - model[0], model[5] - model[4], model[9] - model[8] }
     };
 }
 
-static void drawBillboardQuad(const Vector3& p, const Vector3 &sur, const Vector3 &sul, float r, float g, float b, float a) {
+static void drawBillboardQuad(const Vector3& p, const Vector3& sur, const Vector3& sul, float r, float g, float b, float a) {
     glColor4f(r, g, b, a);
     glTexCoord2f(0, 0);
     glVertex3v3v(p - sur);
@@ -178,8 +174,7 @@ void drawSmoke(float t) {
     static float ot = t;
 
     const float dt = t - ot;
-    if (dt != 0)
-    {
+    if (dt != 0) {
         smoke1_particles->move(dt);
     }
 
@@ -189,7 +184,7 @@ void drawSmoke(float t) {
 
     glEnable(GL_FOG);
     glFogi(GL_FOG_MODE, GL_LINEAR);
-    constexpr float a[3]{ 1,1,1 };
+    constexpr float a[3]{ 1, 1, 1 };
     glFogfv(GL_FOG_COLOR, a);
     glFogf(GL_FOG_START, 300);
     glFogf(GL_FOG_END, 800);
@@ -321,7 +316,8 @@ static void elefantiTraICapelli3d(float t, int steps, float tphx, float tphz, in
             delta = (sz * (delta * up)) * rt - (sz * (delta * rt)) * up;
 
             float alpha = 0.005f * (j + 10) + 0.25f;
-            float alpha2 = (j < 10) ? 0.666f : (j < 15) ? (j / 15.0f) : 1;
+            float alpha2 = (j < 10) ? 0.666f : (j < 15) ? (j / 15.0f)
+                                                        : 1;
 
             switch (view) {
             case 0:
@@ -329,32 +325,28 @@ static void elefantiTraICapelli3d(float t, int steps, float tphx, float tphz, in
                     (cr + 0.3f - j * 0.001f) * alpha + 1 - alpha,
                     (cg + 0.3f) * alpha + 1 - alpha,
                     (0.0025f * (j + 10)) * alpha + 1 - alpha,
-                    alpha2
-                );
+                    alpha2);
                 break;
             case 1:
                 glColor4f(
                     (cr + 0.5f - j * 0.001f) * alpha + 1 - alpha,
                     (cg + 0.2f) * alpha + 1 - alpha,
                     (0.0025f * (j + 10)) * alpha + 1 - alpha,
-                    alpha2
-                );
+                    alpha2);
                 break;
             case 2:
                 glColor4f(
                     (j * 0.001f) * alpha + 1 - alpha,
                     (cg + 0.25f) * alpha + 1 - alpha,
                     (cb + 0.525f + 0.0025f * j) * alpha + 1 - alpha,
-                    alpha2
-                );
+                    alpha2);
                 break;
             case 3:
                 glColor4f(
                     (cr + 0.3f - j * 0.001f) * alpha + 1 - alpha,
                     (cg + 0.2f) * alpha + 1 - alpha,
                     (cb + 0.425f + 0.0025f * j) * alpha + 1 - alpha,
-                    alpha2
-                );
+                    alpha2);
                 break;
             }
 
@@ -362,7 +354,6 @@ static void elefantiTraICapelli3d(float t, int steps, float tphx, float tphz, in
             glVertex3v3v(p - delta);
         }
         glEnd();
-
     }
     glDisable(GL_BLEND);
 }
@@ -370,7 +361,7 @@ static void elefantiTraICapelli3d(float t, int steps, float tphx, float tphz, in
 void drawLandscapeTrees(float t, int view) {
     glEnable(GL_FOG);
     glFogi(GL_FOG_MODE, GL_LINEAR);
-    constexpr float a[3]{ 1,1,1 };
+    constexpr float a[3]{ 1, 1, 1 };
     glFogfv(GL_FOG_COLOR, a);
     glFogf(GL_FOG_START, 600.f);
     glFogf(GL_FOG_END, 1500.f);
@@ -437,7 +428,7 @@ void scenaElefantiSferici(float t, int view) {
     bigseed_texture->use();
     glDisable(GL_DEPTH_TEST);
     glBegin(GL_QUADS);
-    for (auto &[pos, size, r, g, b, a]: seeds) {
+    for (auto& [pos, size, r, g, b, a] : seeds) {
         drawBillboardQuad(pos, size * ur, size * ul, r, g, b, a);
     }
     glEnd();
@@ -546,7 +537,7 @@ void skDraw() {
     const float basemezz = basenote + (mezzing * base) / 32;
 
     const int quarting = (int)((t - basenote) * 64 / base);
-    //float basequart = basenote + (quarting * base) / 64;
+    // float basequart = basenote + (quarting * base) / 64;
 
     //    timing += 20;
     if (timing < 2) { // worms 1                    timing 0, 1
@@ -628,7 +619,8 @@ void skDraw() {
 }
 
 void skInitDemoStuff() {
-    greetscreds_texture = skLoadTexture(IDB_GCBITMAP, 8);
+    greets = skHiddenPart(); // the "hidden part" is the greets flash (see drawWhiteFlash)
+    greetscreds_texture = skLoadTexture();
 
     tree_list_base = glGenLists(8);
     landscape1_list = glGenLists(1);
@@ -730,7 +722,5 @@ void skInitDemoStuff() {
     bigseed_texture = circle2(8);
 }
 
-void skUnloadDemoStuff()
-{
-
+void skUnloadDemoStuff() {
 }
