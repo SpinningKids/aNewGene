@@ -6,12 +6,15 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   windows:
     name: Windows (MSVC, debug + release)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
       - name: Materialize LFS blobs
@@ -43,12 +46,22 @@ jobs:
           }
           cmake --preset x64-release
           cmake --build out/build/x64-release --parallel
+      - name: Stage demo executable
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force windows | Out-Null
+          Copy-Item out\build\x64-release\aNewGene.exe windows\aNewGene.exe
+      - name: Upload executable
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows
+          path: windows
 
   linux:
     name: Linux (GCC)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
       - name: Install dependencies
@@ -59,12 +72,22 @@ jobs:
         run: cmake --preset linux-debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
       - name: Build
         run: cmake --build out/build/linux-debug --parallel
+      - name: Stage demo executable
+        run: |
+          set -euo pipefail
+          mkdir -p linux
+          cp out/build/linux-debug/aNewGene linux/aNewGene
+      - name: Upload executable
+        uses: actions/upload-artifact@v7
+        with:
+          name: linux
+          path: linux
 
   lint:
     name: clang-tidy
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
       - name: Install dependencies
@@ -78,3 +101,58 @@ jobs:
           clang-tidy -p out/build/linux-debug -quiet
           src/GenTex.cpp src/GLTexture.cpp src/Main.cpp src/MATH3.CPP
           src/Particles.cpp src/noise.cpp src/utils.cpp
+
+  release:
+    name: Release (zip + GitHub release)
+    needs: [windows, linux, lint]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Download build artifacts
+        uses: actions/download-artifact@v8
+      - name: Create release zip
+        run: |
+          set -euo pipefail
+          mv windows/aNewGene.exe .
+          mv linux/aNewGene .
+          rm -rf windows linux
+          python3 -m zipfile -c sk-ng2026.zip README.md aNewGene aNewGene.exe
+          python3 -m zipfile -l sk-ng2026.zip
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="$(date -u +%Y.%m.%d)"
+          API="https://api.github.com/repos/${GITHUB_REPOSITORY}"
+          ZIP="sk-ng2026.zip"
+
+          python3 - "$TAG" > release.json <<'PYEOF'
+          import json, sys
+          tag = sys.argv[1]
+          print(json.dumps({
+              "tag_name": tag,
+              "name": "aNewGene — post-pandemic edition",
+              "body": open("README.md", encoding="utf-8").read(),
+              "draft": False,
+              "prerelease": False,
+          }))
+          PYEOF
+
+          EXISTING="$(curl -sSf -H "Authorization: Bearer ${GH_TOKEN}" "${API}/releases/tags/${TAG}" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("id",""))' || true)"
+          if [ -n "${EXISTING}" ]; then
+              RELEASE_ID="${EXISTING}"
+          else
+              RESPONSE="$(curl -sSf -X POST -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" -d @release.json "${API}/releases")"
+              RELEASE_ID="$(printf '%s' "${RESPONSE}" | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')"
+          fi
+          UPLOAD_URL="$(curl -sSf -H "Authorization: Bearer ${GH_TOKEN}" "${API}/releases/${RELEASE_ID}" | python3 -c 'import json,sys; print(json.load(sys.stdin)["upload_url"])')"
+          URL_ASSET="$(printf '%s' "${UPLOAD_URL}" | sed -e "s|{name}|${ZIP}|" -e "s|{filename}|${ZIP}|")"
+          curl -sSf -L -X POST \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Content-Length: $(stat -c%s "${ZIP}")" \
+            -H "Content-Type: application/zip" \
+            --data-binary "@${ZIP}" \
+            "${URL_ASSET}" -o asset.json
+          python3 -c 'import json,sys; print("Release:", json.load(open("asset.json"))["html_url"])'
