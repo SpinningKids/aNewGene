@@ -8,7 +8,7 @@
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
-#include <Windows.h>
+#include <windows.h>
 #else
 #include <SDL2/SDL.h>
 #include <unistd.h>
