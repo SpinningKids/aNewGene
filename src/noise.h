@@ -38,9 +38,9 @@ namespace details {
 
     template <size_t N>
     uint16_t index(const table_type (&idx)[N]) {
-        int new_index = 0;
-        for (int i = 0; i < N; i++) {
-            new_index = permutation(new_index + idx[i]);
+        table_type new_index = 0;
+        for (size_t i = 0; i < N; i++) {
+            new_index = permutation(static_cast<table_type>(new_index + idx[i]));
         }
         return new_index & tableMask;
     }

@@ -33,11 +33,11 @@ namespace {
     bool valueTabInit(int seed) {
         pan_srandom(seed);
         for (size_t i = 0; i < details::tableSize; i++) {
-            details::permutation_table[i] = i;
+            details::permutation_table[i] = static_cast<unsigned short>(i);
         }
         for (size_t i = 0; i < 16 * details::tableSize; i++) {
-            const table_type i1 = pan_random() & details::tableMask;
-            const table_type i2 = pan_random() & details::tableMask;
+            const table_type i1 = static_cast<table_type>(pan_random() & details::tableMask);
+            const table_type i2 = static_cast<table_type>(pan_random() & details::tableMask);
             std::swap(details::permutation_table[i1], details::permutation_table[i2]);
         }
         return true;
@@ -54,13 +54,13 @@ namespace details {
         if (!array_size) {
             return valueFunc(index);
         }
-        const table_type base_index = index + ix[array_size - 1];
+        const table_type base_index = static_cast<table_type>(index + ix[array_size - 1]);
         return catmullrom(
             fx[array_size - 1],
-            vnoise2(array_size - 1, permutation(base_index - 1), ix, fx),
-            vnoise2(array_size - 1, permutation(base_index + 0), ix, fx),
-            vnoise2(array_size - 1, permutation(base_index + 1), ix, fx),
-            vnoise2(array_size - 1, permutation(base_index + 2), ix, fx));
+            vnoise2(array_size - 1, permutation(static_cast<table_type>(base_index - 1)), ix, fx),
+            vnoise2(array_size - 1, permutation(static_cast<table_type>(base_index + 0)), ix, fx),
+            vnoise2(array_size - 1, permutation(static_cast<table_type>(base_index + 1)), ix, fx),
+            vnoise2(array_size - 1, permutation(static_cast<table_type>(base_index + 2)), ix, fx));
     }
 
     bool init = valueTabInit(665); // risky business. This might be optimized away.
