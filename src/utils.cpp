@@ -1,7 +1,7 @@
 
 #include "utils.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -31,7 +31,7 @@ bool hiddenpart = false;
 
 using namespace std;
 
-#ifdef WIN32
+#ifdef _WIN32
 HDC hDC;
 HINSTANCE g_hinstance;
 constexpr char WINDOW_CLASS_NAME[] = "SKCLASS";
@@ -103,7 +103,7 @@ long memtell(void* handle) {
 static void skSwapBuffers() {
     glFinish();
     glFlush();
-#ifdef WIN32
+#ifdef _WIN32
     SwapBuffers(hDC);
 #else
     SDL_GL_SwapWindow(sdl_window);
@@ -112,7 +112,7 @@ static void skSwapBuffers() {
 
 // windows
 
-#ifdef WIN32
+#ifdef _WIN32
 static LRESULT CALLBACK skWinProc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp) {
     switch (msg) {
     case WM_KEYDOWN:
@@ -166,7 +166,7 @@ void panViewPerspective(double fov, double znear, double zfar) {
 
 /* Timing vars */
 static float timer_time;
-#ifdef WIN32
+#ifdef _WIN32
 static __int64 timer_start;
 static __int64 timer_frq;
 #else
@@ -182,7 +182,7 @@ static float skTimerFrame() {
     if (isMusicEnabled()) {
         timer_time = FMUSIC_GetTime() / 1000.f;
     } else {
-#ifdef WIN32
+#ifdef _WIN32
         __int64 a;
         QueryPerformanceCounter((LARGE_INTEGER*)&a);
 #else
@@ -200,7 +200,7 @@ static float skTimerFrame() {
 }
 
 void skInitTimer() {
-#ifdef WIN32
+#ifdef _WIN32
     QueryPerformanceCounter((LARGE_INTEGER*)&timer_start);
     QueryPerformanceFrequency((LARGE_INTEGER*)&timer_frq);
 #else
@@ -260,7 +260,7 @@ bool skHiddenPart() {
     return hiddenpart;
 }
 
-#ifndef WIN32
+#ifndef _WIN32
 /*
  * Switches:
  *
@@ -509,7 +509,7 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hprevinstance, LPSTR lpcmdline
 #endif
 
 void skQuitDemo() {
-#ifdef WIN32
+#ifdef _WIN32
     PostQuitMessage(0);
 #else
     done = 1;
