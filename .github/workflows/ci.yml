@@ -187,12 +187,20 @@ jobs:
               RESPONSE="$(curl -sSf -X POST -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" -d @release.json "${API}/releases")"
               RELEASE_ID="$(printf '%s' "${RESPONSE}" | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')"
           fi
-          UPLOAD_URL="$(curl -sSf -H "Authorization: Bearer ${GH_TOKEN}" "${API}/releases/${RELEASE_ID}" | python3 -c 'import json,sys; print(json.load(sys.stdin)["upload_url"])')"
+          RELEASE_JSON="$(curl -sSf -H "Authorization: Bearer ${GH_TOKEN}" "${API}/releases/${RELEASE_ID}")"
+          UPLOAD_URL="$(printf '%s' "${RELEASE_JSON}" | python3 -c 'import json,sys; print(json.load(sys.stdin)["upload_url"])')"
+          HAS_ASSET="$(printf '%s' "${RELEASE_JSON}" | python3 -c 'import json,sys; print(any(a["name"] == sys.argv[1] for a in json.load(sys.stdin).get("assets", [])))' "${ZIP}")"
           URL_ASSET="$(printf '%s' "${UPLOAD_URL}" | sed -e "s|{name}|${ZIP}|" -e "s|{filename}|${ZIP}|")"
-          curl -sSf -L -X POST \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H "Content-Length: $(stat -c%s "${ZIP}")" \
-            -H "Content-Type: application/zip" \
-            --data-binary "@${ZIP}" \
-            "${URL_ASSET}" -o asset.json
-          python3 -c 'import json,sys; print("Release:", json.load(open("asset.json"))["html_url"])'
+          if [ "${HAS_ASSET}" = "True" ]; then
+              # a second push on the same day: GitHub rejects a duplicate asset
+              # name (422). Keep the zip already published for that day.
+              echo "Release ${TAG} already has ${ZIP}: keeping the existing asset, skipping upload"
+          else
+              curl -sSf -L -X POST \
+                -H "Authorization: Bearer ${GH_TOKEN}" \
+                -H "Content-Length: $(stat -c%s "${ZIP}")" \
+                -H "Content-Type: application/zip" \
+                --data-binary "@${ZIP}" \
+                "${URL_ASSET}" -o asset.json
+              python3 -c 'import json,sys; print("Release:", json.load(open("asset.json"))["html_url"])'
+          fi
