@@ -178,5 +178,5 @@ jobs:
               # gh expands the upload_url URI template, handles auth and content
               # length correctly — the hand-rolled curl upload always 400'd.
               gh release upload "${TAG}" "${ZIP}" --repo "${GITHUB_REPOSITORY}"
-              gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" --json htmlUrl --jq .htmlUrl
+              echo "Release: https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG}"
           fi
