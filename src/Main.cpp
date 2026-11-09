@@ -9,7 +9,7 @@
   Portions by: Rio/SpinningKids
  ************************************/
 
-#ifdef WIN32
+#ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -29,6 +29,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <iterator>
 #include <memory>
 #include <numeric>
 #include <tuple>
@@ -522,11 +523,15 @@ void skDraw() {
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
     static const float base = 7.685f;
+    // Timings 12 onward run at double speed, anchored to the 11.25 * base song position.
+    constexpr int fastTiming = 12;
+    constexpr float fastStart = 11.25f;
+    constexpr int fastFactor = 2;
     int timing = (int)(t / base);
     float basetime = timing * base;
-    if (timing > 11) {
-        timing = 12 + (int)((t - 11.25f * base) * 2 / base);
-        basetime = 11.25f * base + (timing - 12) * base / 2;
+    if (timing >= fastTiming) {
+        timing = fastTiming + (int)((t - fastStart * base) * fastFactor / base);
+        basetime = fastStart * base + (timing - fastTiming) * base / fastFactor;
     }
     const float scenetime = t - basetime;
 
@@ -567,14 +572,14 @@ void skDraw() {
             spos = 0;
         }
         const int syncs[] = { 4, 6, 14, 32, 34, 36, 38, 44, 48, 49, 68, 70, 78, 84, 88, 90, 96, 98, 100, 102, 128 };
-        while (noting2 >= syncs[spos]) {
+        while (spos < (int)std::size(syncs) && noting2 >= syncs[spos]) {
             for (int i = 0; i < 5; i++) {
                 flower_particles->add(
                     { 50 * vlattice((spos * 5 + i), 1), 50 * vlattice((spos * 5 + i), 2), 100 * vlattice((spos * 5 + i), 3) - 100 - spos * 10 }, zero3, (vlattice((spos * 5 + i), 4) * 10 + 30) / 3, (vlattice((spos * 5 + i), 5) * 10 + 30) / 600, 0.7f + vlattice((spos * 5 + i), 6) * 0.07f, 0.515f + vlattice((spos * 5 + i), 7) * 0.0515f, 0.67f + vlattice((spos * 5 + i), 8) * 0.067f, 0.5f, t);
             }
             spos++;
         }
-        onoting = noting;
+        onoting = noting2;
         drawSmoke2(t, (timing - 7) / 2); // seeds must appear in sync with music!
     } else if (timing < 14) { // filler             timing 11, 12, 13
         scenaElefantiSferici(t, noting);
