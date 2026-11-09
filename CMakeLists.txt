@@ -65,6 +65,13 @@ target_include_directories(${TARGET_NAME} PRIVATE ${RES_DIR})
 target_link_libraries(${TARGET_NAME} PUBLIC minifmod OpenGL::GL OpenGL::GLU $<$<NOT:$<PLATFORM_ID:Windows>>:SDL2::SDL2>)
 set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 20)
 
+# Warnings are informational (maintainer policy: /W4, no /WX).
+if(MSVC)
+	target_compile_options(${TARGET_NAME} PRIVATE "/W4")
+elseif(MINGW)
+	target_compile_options(${TARGET_NAME} PRIVATE "-Wall" "-Wextra")
+endif()
+
 # Map files: one unique file per target. A single relative /MAP path shared by
 # all targets in a build tree breaks the second link (map files come out
 # read-only) and so does minifmod's own global /MAP:out.map. The last /MAP
