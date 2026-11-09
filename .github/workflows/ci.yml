@@ -169,8 +169,8 @@ jobs:
           if ! gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
               gh release create "${TAG}" --title "aNewGene — post-pandemic edition" --notes-file README.md --repo "${GITHUB_REPOSITORY}"
           fi
-          HAS_ASSET="$(gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" --json assets --jq "[.assets[].name] | index(\"${ZIP}\")")"
-          if [ "${HAS_ASSET}" != "null" ]; then
+          HAS_ASSET="$(gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" --json assets --jq ".assets | any(.name == \"${ZIP}\")")"
+          if [ "${HAS_ASSET}" = "true" ]; then
               # a second push on the same day: GitHub rejects a duplicate asset
               # name (422). Keep the zip already published for that day.
               echo "Release ${TAG} already has ${ZIP}: keeping the existing asset, skipping upload"
